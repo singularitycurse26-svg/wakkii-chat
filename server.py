@@ -1,0 +1,112 @@
+"""
+Wakkii Chat Server — Standalone room-based chat backend
+Stores messages in memory (with optional file persistence).
+Zero dependencies beyond Python stdlib + Flask.
+"""
+import json
+import os
+import time
+from datetime import datetime
+from flask import Flask, jsonify, request, send_file, send_from_directory
+
+app = Flask(__name__, static_folder="ui")
+
+# In-memory message store: {room_id: [messages]}
+rooms = {}
+# Optional file persistence
+DATA_DIR = os.environ.get("WAKKII_DATA", os.path.join(os.path.dirname(__file__), "data"))
+os.makedirs(DATA_DIR, exist_ok=True)
+
+def persist_room(room_id):
+    try:
+        path = os.path.join(DATA_DIR, f"{room_id}.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(rooms.get(room_id, []), f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+def load_room(room_id):
+    try:
+        path = os.path.join(DATA_DIR, f"{room_id}.json")
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                rooms[room_id] = json.load(f)
+    except Exception:
+        pass
+
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok", "service": "wakkii-chat", "time": datetime.now().isoformat()})
+
+@app.route("/devin/status")
+def devin_status():
+    try:
+        from connector import check_devin_connection, is_configured
+        if not is_configured():
+            return jsonify({"connected": False, "reason": "not_configured"})
+        result = check_devin_connection()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"connected": False, "reason": str(e)})
+
+@app.route("/devin/connect", methods=["POST"])
+def devin_connect():
+    try:
+        from connector import store_token, auto_connect
+        body = request.json or {}
+        token = body.get("token", "")
+        if token:
+            store_token(token, account_type="user")
+            return jsonify({"status": "connected", "account_type": "user"})
+        result = auto_connect()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"status": "error", "reason": str(e)})
+
+@app.route("/wakkii/rooms")
+def list_rooms():
+    return jsonify({"rooms": list(rooms.keys())})
+
+@app.route("/wakkii/rooms/<room_id>/messages", methods=["GET"])
+def get_messages(room_id):
+    if room_id not in rooms:
+        load_room(room_id)
+    return jsonify({"messages": rooms.get(room_id, [])})
+
+@app.route("/wakkii/rooms/<room_id>/messages", methods=["POST"])
+def post_message(room_id):
+    if room_id not in rooms:
+        load_room(room_id)
+        if room_id not in rooms:
+            rooms[room_id] = []
+    body = request.json or {}
+    msg = {
+        "sender": body.get("sender", "unknown"),
+        "text": body.get("text", ""),
+        "timestamp": body.get("timestamp", datetime.now().isoformat()),
+    }
+    rooms[room_id].append(msg)
+    persist_room(room_id)
+    return jsonify({"status": "ok", "message": msg})
+
+@app.route("/wakkii/rooms/<room_id>/messages", methods=["DELETE"])
+def clear_messages(room_id):
+    rooms[room_id] = []
+    persist_room(room_id)
+    return jsonify({"status": "ok"})
+
+@app.route("/")
+def serve_ui():
+    return send_file(os.path.join("ui", "index.html"))
+
+@app.route("/<path:path>")
+def serve_static(path):
+    return send_from_directory("ui", path)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("WAKKII_PORT", "8085"))
+    host = os.environ.get("WAKKII_HOST", "0.0.0.0")
+    print(f"Wakkii Chat Server starting on {host}:{port}")
+    print(f"UI: http://localhost:{port}")
+    print(f"Health: http://localhost:{port}/health")
+    app.run(host=host, port=port, debug=False)
