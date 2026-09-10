@@ -95,6 +95,64 @@ def clear_messages(room_id):
     persist_room(room_id)
     return jsonify({"status": "ok"})
 
+@app.route("/wakkii/agents")
+def list_agents():
+    try:
+        import requests
+        resp = requests.get("http://127.0.0.1:8086/mcp/get_agent_status", timeout=5)
+        if resp.status_code == 200:
+            return jsonify(resp.json())
+    except Exception:
+        pass
+    return jsonify({"agents": {}})
+
+@app.route("/wakkii/agents/status")
+def agents_status():
+    try:
+        import requests
+        resp = requests.get("http://127.0.0.1:8086/mcp/get_agent_status", timeout=5)
+        if resp.status_code == 200:
+            return jsonify(resp.json())
+    except Exception:
+        pass
+    return jsonify({"agents": {}})
+
+@app.route("/wakkii/agents/create", methods=["POST"])
+def create_agent():
+    body = request.json or {}
+    room = body.get("room", f"AGENT-{int(time.time())}")
+    project = body.get("project", "soulmate")
+    name = body.get("name", f"Agent ({project})")
+    return jsonify({"status": "ok", "room": room, "project": project, "name": name})
+
+@app.route("/wakkii/suggestions")
+def get_suggestions():
+    try:
+        import requests
+        resp = requests.get("http://127.0.0.1:8086/mcp/get_suggestions", timeout=5)
+        if resp.status_code == 200:
+            return jsonify(resp.json())
+    except Exception:
+        pass
+    return jsonify({"suggestions": []})
+
+@app.route("/wakkii/suggestions/apply", methods=["POST"])
+def apply_suggestion():
+    body = request.json or {}
+    desc = body.get("description", "")
+    return jsonify({"status": "ok", "message": f"Applying: {desc}"})
+
+@app.route("/cline/status")
+def cline_status():
+    return jsonify({
+        "online": True,
+        "room": "CLINE",
+        "model": "glm-5.1",
+        "backend": "WindsurfAPI",
+        "suggestions_interval": 900,
+        "max_suggestions": 10
+    })
+
 @app.route("/")
 def serve_ui():
     return send_file(os.path.join("ui", "index.html"))

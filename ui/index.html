@@ -54,6 +54,46 @@ body {
 }
 .chat-header .devin-badge.connected { background: rgba(0,230,118,0.2); color: var(--agent); }
 
+.room-selector {
+  background: var(--surface);
+  padding: 8px 12px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  overflow-x: auto;
+}
+.room-selector .label {
+  font-size: 11px; color: var(--muted); white-space: nowrap;
+}
+.room-tab {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--muted);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.room-tab:hover { background: rgba(255,255,255,0.1); }
+.room-tab.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  border-color: transparent;
+}
+.room-tab.cline { border-color: #00e676; }
+.room-tab.cline.active { background: linear-gradient(135deg, #00e676, #00b8d4); }
+.room-tab .dot {
+  display: inline-block; width: 6px; height: 6px;
+  border-radius: 50%; margin-right: 4px;
+  background: var(--muted);
+}
+.room-tab.active .dot { background: white; }
+.room-tab.cline .dot { background: #00e676; }
+
 .chat-messages {
   flex: 1;
   overflow-y: auto;
@@ -154,10 +194,18 @@ body {
 <div class="chat-header">
   <div class="logo">🤖</div>
   <div>
-    <h1>Wakkii Agent</h1>
+    <h1 id="roomTitle">Wakkii Chat</h1>
     <div class="status" id="status">Connecting...</div>
   </div>
   <div class="devin-badge" id="devinBadge"> Devin</div>
+</div>
+
+<div class="room-selector" id="roomSelector">
+  <span class="label">Rooms:</span>
+  <div class="room-tab cline active" data-room="CLINE"><span class="dot"></span>Cline</div>
+  <div class="room-tab" data-room="AGENT-1"><span class="dot"></span>Agent 1</div>
+  <div class="room-tab" data-room="AGENT-2"><span class="dot"></span>Agent 2</div>
+  <div class="room-tab" data-room="AGENT-3"><span class="dot"></span>Agent 3</div>
 </div>
 
 <div class="chat-messages" id="messages">
@@ -173,18 +221,41 @@ body {
 <script>
 // --- Configuration ---
 const API_BASE = window.WAKKII_API || '';
-const ROOM_ID = window.WAKKII_ROOM || 'AGENT';
+let ROOM_ID = window.WAKKII_ROOM || 'CLINE';
 const USER_NAME = window.WAKKII_USER || 'User';
 const POLL_INTERVAL = 3000;
 
 let lastCount = 0;
 let isTyping = false;
+let roomMessages = {}; // cache per room
 
 const messagesEl = document.getElementById('messages');
 const inputEl = document.getElementById('input');
 const typingEl = document.getElementById('typing');
 const statusEl = document.getElementById('status');
 const devinBadge = document.getElementById('devinBadge');
+const roomTitle = document.getElementById('roomTitle');
+const roomSelector = document.getElementById('roomSelector');
+
+// Room switching
+roomSelector.addEventListener('click', (e) => {
+  const tab = e.target.closest('.room-tab');
+  if (!tab) return;
+  const room = tab.dataset.room;
+  if (room === ROOM_ID) return;
+  switchRoom(room);
+});
+
+function switchRoom(room) {
+  ROOM_ID = room;
+  lastCount = roomMessages[room] || 0;
+  messagesEl.innerHTML = '<div class="msg system">Switched to ' + room + '</div>';
+  document.querySelectorAll('.room-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.room === room);
+  });
+  roomTitle.textContent = room === 'CLINE' ? 'Cline — Front Desk' : room;
+  fetchMessages();
+}
 
 // Auto-scroll only when near bottom
 let userScrolled = false;
@@ -198,7 +269,7 @@ function scrollToBottom() {
 }
 
 function addMessage(sender, text, ts) {
-  const isAgent = sender === 'Wakkii Agent' || sender.includes('Agent');
+  const isAgent = sender === 'Wakkii Agent' || sender.includes('Agent') || sender === 'Cline';
   const cls = isAgent ? 'agent' : (sender === 'system' ? 'system' : 'user');
   const div = document.createElement('div');
   div.className = `msg ${cls}`;
@@ -222,15 +293,17 @@ async function fetchMessages() {
     if (msgs.length > lastCount) {
       const newMsgs = msgs.slice(lastCount);
       lastCount = msgs.length;
+      roomMessages[ROOM_ID] = lastCount;
       for (const msg of newMsgs) {
         addMessage(msg.sender, msg.text, msg.timestamp);
-        if (msg.sender === 'Wakkii Agent' || msg.sender.includes('Agent')) {
+        if (msg.sender === 'Wakkii Agent' || msg.sender.includes('Agent') || msg.sender === 'Cline') {
           isTyping = false;
           typingEl.classList.remove('active');
         }
       }
     } else if (lastCount === 0 && msgs.length > 0) {
       lastCount = msgs.length;
+      roomMessages[ROOM_ID] = lastCount;
     }
   } catch (e) {
     statusEl.textContent = 'Disconnected — waiting for server...';
@@ -267,7 +340,6 @@ async function checkConnection() {
     if (resp.ok) {
       statusEl.textContent = 'Online';
       statusEl.style.color = 'var(--agent)';
-      // Check Devin connection
       try {
         const devinResp = await fetch(`${API_BASE}/devin/status`);
         if (devinResp.ok) {
@@ -291,8 +363,10 @@ fetchMessages();
 setInterval(fetchMessages, POLL_INTERVAL);
 setInterval(checkConnection, 30000);
 
-// Focus input
 inputEl.focus();
 </script>
+
+<!-- V-103 Radio Widget (separate floating widget, bottom-left) -->
+<script src="radio-widget.js"></script>
 </body>
 </html>

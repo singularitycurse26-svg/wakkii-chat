@@ -646,5 +646,28 @@ def main():
         post_message(ROOM_ID, "🤖 Going offline.")
         save_json(WORK_QUEUE_PATH, work_queue)
 
+def start_agent(agent_id, room, project, name):
+    """Start an agent instance in its own thread (for multi-agent mode)."""
+    global ROOM_ID, AGENT_NAME, work_queue, WORK_QUEUE_PATH, last_msg_count
+
+    ROOM_ID = room
+    AGENT_NAME = name
+    last_msg_count = 0
+    WORK_QUEUE_PATH = Path.home() / ".fablemythos" / f"work-queue-{agent_id}.json"
+    work_queue = load_json(WORK_QUEUE_PATH, [])
+
+    # Register with MCP
+    try:
+        requests.post(f"{os.environ.get('MCP_API', 'http://127.0.0.1:8086')}/mcp/register_agent",
+                       json={"agent_id": agent_id, "project": project, "room": room}, timeout=5)
+    except Exception:
+        pass
+
+    time.sleep(2)
+    post_message(ROOM_ID, f"🤖 {name} online (project: {project}). Awaiting tasks. Type 'work on <task>' to assign work.")
+
+    poll_thread = threading.Thread(target=poll_loop, daemon=True)
+    poll_thread.start()
+
 if __name__ == "__main__":
     main()

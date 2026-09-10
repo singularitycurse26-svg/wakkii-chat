@@ -1,90 +1,133 @@
 # Wakkii Chat
 
-A standalone room-based chat system with a 24/7 autonomous coding agent that connects to Devin AI.
+A standalone multi-agent chat system with Cline as the 24/7 front desk assistant, multiple Wakkii Agents working on different projects simultaneously, MCP coordination for split-brain agent communication, Devin AI integration with GLM-5.1 fallback, and a V-103 radio widget.
 
 ## What It Does
 
-Wakkii Chat is a self-contained chat platform with three parts:
+Wakkii Chat has four main parts:
 
-1. **Chat Server** (`server.py`) — A lightweight Flask server that hosts room-based chat with message persistence
-2. **Smart Agent** (`agent.py`) — A 24/7 autonomous coding agent with a self-adapting harness that lives in the chat and works on projects
-3. **Chat UI** (`ui/`) — A web-based chat interface that can be embedded into any application
+1. **Cline (Front Desk Assistant)** — 24/7 always-on AI agent with no limitations. Lives in the CLINE chat room. Can do anything: edit files, run commands, build, deploy. Connected to GLM-5.1 via WindsurfAPI. Aligned with universal memory and journal. Generates 10 suggestions every 15 minutes and auto-applies them.
 
-The agent lives inside the chat room, polls for messages, and responds to commands. It can:
-- Create, edit, and delete files
-- Run PowerShell commands
-- Build and deploy projects
-- Search codebases
-- Plan tasks step-by-step
-- Verify its own work
-- Update a universal journal
-- Auto-configure its workflow on the fly
+2. **Multiple Wakkii Agents** — Each runs in its own chat room (AGENT-1, AGENT-2, AGENT-3) working on a different project simultaneously. All connected to the same Devin account.
 
-## How It Connects to Devin
+3. **MCP Coordination Server** — Split-brain mechanics. Agents communicate through MCP to avoid conflicts: file locking, task claiming, inter-agent messaging, suggestion queue.
 
-Wakkii Chat uses a **Universal Devin Connector** (`connector.py`) that:
+4. **V-103 Radio Widget** — Separate floating radio player (bottom-left) that plays V-103 Atlanta, shows now-playing song, saves to playlist.
 
-### For the original author (Justin):
-- Auto-detects the author's machine
-- Auto-configures with a pre-registered Devin token
-- The author's Devin account is protected — no one else can access it
+## Architecture
 
-### For other users:
-- Runs an interactive setup flow on first launch
-- Asks for a Devin API key from https://devin.ai/settings
-- Encrypts and stores the token locally using machine-specific encryption
-- The token never leaves the machine except to talk to Devin's official API
-- Each user connects their own Devin account
-
-### Connection flow:
 ```
-Download → start.ps1 → connector.py runs → 
-  If author machine: auto-connect with pre-configured token
-  If new user: prompt for Devin API key → encrypt and store → connect
-→ Agent comes online in chat → UI auto-creates at bottom → 
-  Agent says: "Hi! I'm awaiting project ideas. Let's plan first, then scale over time."
+┌──────────────────────────────────────────────────────────────┐
+│                    WAKKII CHAT SERVER (8085)                   │
+│                                                                │
+│  ┌─────────────────────────────────────────────────────────┐  │
+│  │  CLINE — FRONT DESK ASSISTANT (Room: CLINE)             │  │
+│  │  • 24/7 always-on, no limitations, can do anything      │  │
+│  │  • Connected to GLM-5.1 via WindsurfAPI (port 3003)     │  │
+│  │  • Aligned with universal memory + journal              │  │
+│  │  • Auto-suggestions: 10 every 15 minutes                │  │
+│  │  • Auto-applies suggestions or assigns to other agents  │  │
+│  │  • Gets smarter on the fly (updates its own rules)      │  │
+│  └─────────────────────────────────────────────────────────┘  │
+│                                                                │
+│  Room: AGENT-1    Room: AGENT-2    Room: AGENT-3              │
+│  ┌──────────┐     ┌──────────┐     ┌──────────┐               │
+│  │ Agent 1  │     │ Agent 2  │     │ Agent 3  │               │
+│  │ Soulmate │     │ Music    │     │ Radio    │               │
+│  └────┬─────┘     └────┬─────┘     └────┬─────┘               │
+│       └────────────────┼────────────────┘                     │
+│                        │                                        │
+│         ┌──────────────┴──────────────┐                         │
+│         │   MCP COORDINATION SERVER    │                         │
+│         │       (mcp_server.py:8086)    │                         │
+│         │                              │                        │
+│         │  - File lock registry        │                        │
+│         │  - Agent status board        │                        │
+│         │  - Task assignment           │                        │
+│         │  - Inter-agent messaging     │                        │
+│         │  - Conflict detection        │                        │
+│         │  - Suggestion queue          │                        │
+│         └──────────────┬──────────────┘                         │
+│                        │                                        │
+│         ┌──────────────┴──────────────┐                         │
+│         │  UNIVERSAL LLM CONNECTOR     │                         │
+│         │  (connector.py)              │                         │
+│         │                              │                        │
+│         │  Devin API (primary)         │                        │
+│         │  GLM-5.1 via WindsurfAPI     │                        │
+│         │  (fallback, free w/ sub)    │                        │
+│         └─────────────────────────────┘                         │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-## The Smart Harness
+## Cline — Front Desk Assistant
 
-The agent uses a **self-adapting smart harness** that auto-configures on the fly:
+Cline is the 24/7 always-on front desk assistant with no limitations:
 
-### How it works:
-The harness monitors the agent's behavior and adjusts its parameters:
+- **Always available** in the CLINE chat room
+- **No limitations** — can edit files, run commands, build, deploy anything
+- **Connected to GLM-5.1** via WindsurfAPI (free with Windsurf subscription)
+- **Aligned with universal memory** — reads SOUL.md, MEMORY.md, JOURNAL.md, PROJECT_MAP.md at start of every task
+- **Updates journal** after significant work
+- **Gets smarter on the fly** — writes learnings to `~/.fablemythos/cline-learnings.md`, reads them next session
 
-| Metric | What triggers adaptation | What changes |
-|--------|------------------------|-------------|
-| Loop count | Agent repeats same output 2+ times | Increases prompt strictness, reduces loop threshold |
-| Error count | 3+ command failures | Increases error analysis depth |
-| False verify | Verification passes but work is broken | Increases verification depth |
-| Step too large | Steps cause too many errors | Switches to smaller step granularity |
-| Context overflow | Conversation too long | Trims context more aggressively |
+### Auto-Suggestion System
 
-### Workflow phases:
-1. **INTAKE** — receive task, understand what's being asked
-2. **PLAN** — break task into concrete steps
-3. **EXPLORE** — read files, run commands, understand current state
-4. **EXECUTE** — make changes one at a time
-5. **VERIFY** — check that changes work (build, test, run)
-6. **REPORT** — update journal, report progress to chat
-7. **ADAPT** — auto-configure harness parameters based on what worked
+Every 15 minutes, Cline generates 10 suggestions:
 
-### Tools the agent uses:
-- `RUN: <command>` — execute a PowerShell command
-- `READ: <file>` — read a file's contents
-- `WRITE: <file>` — create/overwrite a file
-- `SEARCH: <pattern>` — search for text in project files
-- `PLAN: <description>` — declare a step-by-step plan
-- `PROGRESS: <what's done>` — mark a step as complete
-- `VERIFY: <what to check>` — declare verification
-- `DONE` — task is complete
+```
+SUGGESTION: project | Fix blank page in music-studio-web | auto-apply
+SUGGESTION: memory | Update PROJECT_MAP with new radio repo | auto-apply
+SUGGESTION: workflow | Add build verification step | assign-to-agent:agent-1
+SUGGESTION: project | Polish Wakkii Links UI animations | suggest-to-user
+```
+
+Three action types:
+- `auto-apply` — Cline does it immediately
+- `suggest-to-user` — posts to chat for you to approve
+- `assign-to-agent` — sends to another agent via MCP
+
+Cline or another AI agent can auto-pop-up and apply suggestions.
+
+## Multi-Agent System
+
+Multiple agents run simultaneously, each in its own chat room:
+
+| Room | Agent | Project |
+|------|-------|---------|
+| CLINE | Cline | All projects (front desk) |
+| AGENT-1 | Soulmate Agent | soulmate |
+| AGENT-2 | Music Agent | music-studio-web |
+| AGENT-3 | Radio Agent | wakkii-chat |
+
+All agents share the same Devin/GLM-5.1 connection. Each has its own work queue and message history.
+
+### MCP Coordination (Split-Brain Mechanics)
+
+Agents coordinate through the MCP server to avoid conflicts:
+
+- **File locking** — before editing a file, agent locks it. Other agents wait.
+- **Task claiming** — before starting a task, agent claims it. Others don't duplicate.
+- **Inter-agent messaging** — agents can send messages to each other.
+- **Status board** — all agents can see what others are working on.
+- **Suggestion queue** — Cline posts suggestions, agents can pick them up.
+
+MCP tools:
+- `register_agent(agent_id, project, room)`
+- `lock_file(agent_id, file_path)` / `unlock_file(agent_id, file_path)`
+- `get_locked_files()`
+- `get_agent_status()` / `update_status(agent_id, status, task)`
+- `send_agent_message(to_agent_id, message)` / `get_agent_messages(agent_id)`
+- `claim_task(agent_id, task_desc)` / `get_active_tasks()` / `complete_task(task_id)`
+- `post_suggestion(suggestion)` / `get_suggestions()`
 
 ## Installation
 
 ### Prerequisites
 - Python 3.11+
+- Node.js 18+ (for Cline CLI)
+- WindsurfAPI running on port 3003 (for GLM-5.1)
 - Windows (PowerShell commands)
-- A Devin AI account (for the agent's reasoning) — optional, agent can fall back to local LLM
 
 ### Quick Start
 ```powershell
@@ -97,36 +140,57 @@ cd wakkii-chat
 ```powershell
 pip install -r requirements.txt
 
-# Terminal 1 — start chat server
+# Terminal 1 — MCP server
+python mcp_server.py
+
+# Terminal 2 — chat server
 python server.py
 
-# Terminal 2 — start agent
-python agent.py
+# Terminal 3 — multi-agent manager (Cline + agents + suggestions)
+python multi_agent.py
 ```
 
 ### Open the Chat UI
 Navigate to `http://localhost:8085` in your browser.
 
+## Chat UI
+
+The UI has:
+- **Room selector** at the top — switch between CLINE, AGENT-1, AGENT-2, AGENT-3
+- **CLINE room** — talk to Cline (front desk assistant, 24/7, no limitations)
+- **AGENT rooms** — talk to each project agent
+- **V-103 radio widget** — auto-loads at bottom-left, plays V-103 Atlanta
+- **Devin badge** — shows connection status
+
 ## Embedding the Widget
 
-Drop the widget into any HTML page:
+Drop the chat widget into any HTML page:
 
 ```html
 <script src="wakkii-widget.js" 
         data-api="http://localhost:8085" 
-        data-room="AGENT"
+        data-room="CLINE"
         data-user="Justin"></script>
 ```
 
-The widget auto-creates a floating chat button at the bottom-right of the page.
-Click it to open the chat panel. On first load, it auto-opens and the agent greets you.
+Drop the radio widget into any HTML page:
+
+```html
+<script src="radio-widget.js"></script>
+```
+
+Both widgets auto-detect duplicates — if already loaded, they won't create a second instance.
 
 ### JavaScript API:
 ```javascript
-WakkiiWidget.init({ api: 'http://localhost:8085', room: 'AGENT', user: 'Justin' });
-WakkiiWidget.open();   // open the chat panel
-WakkiiWidget.close();  // close the chat panel
-WakkiiWidget.send('hello');  // send a message
+WakkiiWidget.init({ api: 'http://localhost:8085', room: 'CLINE', user: 'Justin' });
+WakkiiWidget.open();
+WakkiiWidget.close();
+WakkiiWidget.send('hello');
+
+WakkiiRadio.play();
+WakkiiRadio.pause();
+WakkiiRadio.toggle();
 ```
 
 ## Chat Commands
@@ -139,8 +203,9 @@ WakkiiWidget.send('hello');  // send a message
 | `yes` / `go` | Approve queued task — agent starts working |
 | `no` / `cancel` | Cancel queued task |
 | `status` | Show current work queue |
-| `add goal: <text>` | Add a long-term goal |
-| Any other text | Chat with the agent |
+| Any text | Chat with the agent |
+
+In the CLINE room, Cline responds to anything — it's the front desk assistant with no limitations.
 
 ## API Endpoints
 
@@ -151,8 +216,19 @@ WakkiiWidget.send('hello');  // send a message
 | GET | `/wakkii/rooms/{id}/messages` | Get messages in a room |
 | POST | `/wakkii/rooms/{id}/messages` | Post a message |
 | DELETE | `/wakkii/rooms/{id}/messages` | Clear messages |
+| GET | `/wakkii/agents` | List all agents |
+| GET | `/wakkii/agents/status` | All agents' current state |
+| POST | `/wakkii/agents/create` | Create a new agent room |
+| GET | `/wakkii/suggestions` | Get Cline's suggestions |
+| POST | `/wakkii/suggestions/apply` | Apply a suggestion |
 | GET | `/devin/status` | Check Devin connection |
 | POST | `/devin/connect` | Connect to Devin |
+| GET | `/cline/status` | Cline status |
+| GET | `/mcp/health` | MCP server health |
+| GET | `/mcp/get_agent_status` | All agents' status |
+| GET | `/mcp/get_locked_files` | Locked files |
+| GET | `/mcp/get_active_tasks` | Active tasks |
+| GET | `/mcp/get_suggestions` | Pending suggestions |
 
 ## Configuration
 
@@ -161,15 +237,31 @@ Environment variables:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `WAKKII_API` | `http://127.0.0.1:8085` | Chat server URL |
-| `WAKKII_PORT` | `8085` | Server port |
-| `WAKKII_HOST` | `0.0.0.0` | Server bind address |
-| `WAKKII_ROOM` | `AGENT` | Default room ID |
+| `WAKKII_PORT` | `8085` | Chat server port |
+| `MCP_API` | `http://127.0.0.1:8086` | MCP server URL |
+| `MCP_PORT` | `8086` | MCP server port |
+| `WAKKII_ROOM` | `CLINE` | Default room ID |
 | `DEVIN_TOKEN` | (empty) | Devin API token |
 | `DEVIN_API` | `https://api.devin.ai` | Devin API base URL |
-| `WINDSURF_API` | `http://127.0.0.1:3003` | Fallback LLM API |
-| `WINDSURF_KEY` | `local-dev-key-openmausbot` | Fallback LLM key |
+| `WINDSURF_API` | `http://127.0.0.1:3003` | WindsurfAPI URL (GLM-5.1) |
+| `WINDSURF_KEY` | `local-dev-key-openmausbot` | WindsurfAPI key |
 | `WAKKII_MODEL` | `glm-5.1` | LLM model name |
 | `PROJECTS_ROOT` | `C:\Users\hawpe\CascadeProjects` | Projects directory |
+
+### Multi-Agent Config
+
+`~/.wakkii-chat/agents.json`:
+```json
+{
+  "cline": {"enabled": true, "room": "CLINE"},
+  "suggestions": {"enabled": true, "interval": 900, "max": 10},
+  "agents": [
+    {"id": "agent-1", "room": "AGENT-1", "project": "soulmate", "name": "Soulmate Agent"},
+    {"id": "agent-2", "room": "AGENT-2", "project": "music-studio-web", "name": "Music Agent"},
+    {"id": "agent-3", "room": "AGENT-3", "project": "wakkii-chat", "name": "Chat Agent"}
+  ]
+}
+```
 
 ## Security
 
@@ -177,22 +269,40 @@ Environment variables:
 - The author's Devin account is protected — other users connect their own accounts
 - No tokens are transmitted except to Devin's official API
 - Config files are in `~/.wakkii-chat/` and are gitignored
+- Cline CLI auth is stored in `~/.cline/data/settings/providers.json`
 
 ## File Structure
 
 ```
 wakkii-chat/
 ├── server.py          # Chat server (Flask)
-├── agent.py           # Smart harness agent
-├── connector.py       # Universal Devin connector
+├── agent.py           # Smart harness agent (multi-room support)
+├── cline_agent.py     # Cline front desk assistant
+├── suggestions.py     # Auto-suggestion engine (10 per 15 min)
+├── connector.py       # Universal Devin + GLM-5.1 connector
+├── mcp_server.py      # MCP coordination server
+├── multi_agent.py     # Multi-agent launcher
 ├── start.ps1          # One-click start script
 ├── requirements.txt   # Python dependencies
 ├── .gitignore
 ├── ui/
-│   ├── index.html     # Full-page chat UI
-│   └── wakkii-widget.js  # Embeddable widget
+│   ├── index.html     # Full-page chat UI with room selector
+│   ├── wakkii-widget.js  # Embeddable chat widget
+│   └── radio-widget.js   # V-103 radio widget
 └── data/              # Message persistence (gitignored)
 ```
+
+## Universal Memory
+
+Cline and all agents read these files at the start of every task:
+
+- `~/.fablemythos/SOUL.md` — Agent identity
+- `~/.fablemythos/MEMORY.md` — All projects, learnings
+- `~/.fablemythos/JOURNAL.md` — Current work state
+- `~/.fablemythos/PROJECT_MAP.md` — All repos, URLs, deploy info
+- `~/.fablemythos/ACCESS_POLICY.md` — Permissions
+- `~/.fablemythos/AUDIT_LOG.md` — Action log
+- `~/.fablemythos/cline-learnings.md` — Cline's past learnings (gets smarter)
 
 ## License
 

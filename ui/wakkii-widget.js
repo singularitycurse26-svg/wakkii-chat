@@ -15,10 +15,12 @@
  *   WakkiiWidget.init({ api: 'http://localhost:8085', room: 'AGENT', user: 'Justin' });
  */
 (function() {
+  if (window.WakkiiWidget) return; // Already loaded — don't create duplicate
+
   const script = document.currentScript || document.querySelector('script[src*="wakkii-widget"]');
   const config = {
     api: script?.dataset?.api || window.WAKKII_API || 'http://localhost:8085',
-    room: script?.dataset?.room || window.WAKKII_ROOM || 'AGENT',
+    room: script?.dataset?.room || window.WAKKII_ROOM || 'CLINE',
     user: script?.dataset?.user || window.WAKKII_USER || 'User',
   };
 
