@@ -723,6 +723,18 @@ def bd_stats():
 def serve_ui():
     return send_file(os.path.join("ui", "index.html"))
 
+@app.route("/manifest.json")
+def serve_manifest():
+    return send_file(os.path.join("ui", "manifest.json"))
+
+@app.route("/icon.svg")
+def serve_icon():
+    return send_file(os.path.join("ui", "icon.svg"))
+
+@app.route("/sw.js")
+def serve_sw():
+    return send_file(os.path.join("ui", "sw.js"))
+
 @app.route("/<path:path>")
 def serve_static(path):
     return send_from_directory("ui", path)

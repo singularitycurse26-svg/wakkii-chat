@@ -2,7 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Aceline">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icon.svg">
 <title>Aceline</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -531,6 +539,37 @@ body {
   font-size: 24px; font-weight: 700; color: #FFD700; margin: 12px 0;
 }
 
+/* PWA Install Banner */
+.install-banner {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border-top: 1px solid var(--accent);
+  padding: 12px 16px; z-index: 100001;
+  display: none; align-items: center; gap: 12px;
+  font-family: 'Segoe UI', sans-serif;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+}
+.install-banner.show { display: flex; }
+.install-banner-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 700; color: white; flex-shrink: 0;
+}
+.install-banner-text { flex: 1; min-width: 0; }
+.install-banner-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.install-banner-sub { font-size: 11px; color: var(--muted); }
+.install-banner-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white; border: none; padding: 10px 20px;
+  border-radius: 10px; font-size: 13px; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+}
+.install-banner-close {
+  background: none; border: none; color: var(--muted);
+  font-size: 18px; cursor: pointer; padding: 4px;
+}
+
 /* FaceTime Call UI */
 .facetime-overlay {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -1046,6 +1085,17 @@ body {
   </div>
 </div>
 
+<!-- PWA Install Banner -->
+<div class="install-banner" id="installBanner">
+  <div class="install-banner-icon">A</div>
+  <div class="install-banner-text">
+    <div class="install-banner-title">Install Aceline</div>
+    <div class="install-banner-sub">Add to home screen for instant access</div>
+  </div>
+  <button class="install-banner-btn" id="installBtn">Install</button>
+  <button class="install-banner-close" onclick="document.getElementById('installBanner').classList.remove('show')">x</button>
+</div>
+
 <!-- Verification Modal -->
 <div class="verify-overlay" id="verifyOverlay">
   <div class="verify-modal" id="verifyModal">
@@ -1074,6 +1124,56 @@ body {
 </div>
 
 <script>
+// --- PWA: Service Worker + Install Prompt ---
+let deferredPrompt = null;
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(() => {
+      console.log('Aceline SW registered');
+    }).catch((err) => {
+      console.log('SW registration failed:', err);
+    });
+  });
+}
+
+// Capture install prompt event
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show install banner
+  const banner = document.getElementById('installBanner');
+  if (banner) {
+    setTimeout(() => banner.classList.add('show'), 2000);
+  }
+});
+
+// Install button handler
+document.addEventListener('DOMContentLoaded', () => {
+  const installBtn = document.getElementById('installBtn');
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) {
+        alert('To install Aceline:\n\nAndroid: Tap menu (3 dots) > "Add to Home screen"\niPhone: Tap Share > "Add to Home Screen"');
+        return;
+      }
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        document.getElementById('installBanner').classList.remove('show');
+      }
+      deferredPrompt = null;
+    });
+  }
+});
+
+// Detect if already installed (standalone mode)
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('show');
+  console.log('Aceline installed as PWA');
+});
+
 // --- Configuration ---
 const API_BASE = window.WAKKII_API || '';
 let ROOM_ID = window.WAKKII_ROOM || 'CLINE';

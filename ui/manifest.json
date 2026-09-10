@@ -1,0 +1,25 @@
+﻿{
+  "name": "Aceline — Wakkii Chat",
+  "short_name": "Aceline",
+  "description": "Walkie-talki voice rooms, FaceTime, social ecosystem, live broadcasting, wallet, blind dates, and AI assistant. Part of Incentives Inc.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["social", "communication", "lifestyle", "finance"],
+  "icons": [
+    {"src": "/icon.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any"},
+    {"src": "/icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any"},
+    {"src": "/icon.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "maskable"},
+    {"src": "/icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Walkie Talki", "url": "/#walkie", "description": "Voice rooms"},
+    {"name": "Social", "url": "/#social", "description": "Live, messages, contacts, community"},
+    {"name": "Wallet", "url": "/#wallet", "description": "INC wallet"},
+    {"name": "Blind Date", "url": "/#blinddate", "description": "Voice blind dating"}
+  ]
+}
