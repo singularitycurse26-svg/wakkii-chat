@@ -619,6 +619,7 @@ body {
   <div class="devin-badge" id="devinBadge"> Devin</div>
   <div class="devin-badge" id="walletBadge" style="cursor:pointer; background:rgba(255,215,0,0.15); color:#FFD700;" onclick="toggleWallet()">💰 INC Wallet</div>
   <div class="devin-badge" id="walkieBadge" style="cursor:pointer; background:rgba(0,230,118,0.15); color:#00e676;" onclick="toggleWalkie()">🎙️ Walkie</div>
+  <div class="devin-badge" id="socialBadge" style="cursor:pointer; background:rgba(33,150,243,0.15); color:#2196f3;" onclick="toggleSocial()">🌐 Social</div>
 </div>
 
 <div class="room-selector" id="roomSelector">
@@ -702,6 +703,9 @@ body {
       <button class="walkie-start-btn" onclick="walkieCreateRoom()">
         🎙️ Start Voice Room
       </button>
+      <button class="walkie-start-btn" style="background:linear-gradient(135deg, #9C27B0, #673AB7); color:white;" onclick="walkieStartAI()">
+        🤖 Talk to Aceline AI
+      </button>
       <div style="margin-top:20px;">
         <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">Or join with a code:</div>
         <div class="walkie-join-input">
@@ -745,10 +749,97 @@ body {
         <!-- Participants populated by JS -->
       </div>
     </div>
+
+    <!-- Aceline AI Assistant (hidden until started) -->
+    <div id="walkieAI" style="display:none;">
+      <div style="text-align:center; margin-bottom:16px;">
+        <div style="font-size:48px; margin-bottom:8px;">🤖</div>
+        <div style="font-size:16px; font-weight:600;">Aceline AI Assistant</div>
+        <div style="font-size:12px; color:var(--muted);">Talk to Aceline for real-time development</div>
+      </div>
+      <div id="walkieAIStatus" style="text-align:center; padding:8px; font-size:12px; color:var(--muted); margin-bottom:12px;">
+        Click Start to begin
+      </div>
+      <div id="walkieAITranscript" style="background:var(--bg); padding:10px; border-radius:8px; margin-bottom:8px; font-size:13px; min-height:40px; max-height:100px; overflow-y:auto;">
+        <span style="color:var(--muted);">You: ...</span>
+      </div>
+      <div id="walkieAIResponse" style="background:var(--bg); padding:10px; border-radius:8px; margin-bottom:12px; font-size:13px; min-height:40px; max-height:150px; overflow-y:auto;">
+        <span style="color:var(--muted);">Aceline: ...</span>
+      </div>
+      <button class="walkie-start-btn" id="walkieAIStartBtn" onclick="walkieAIToggle()">
+        Start Listening
+      </button>
+      <button class="walkie-ctrl-btn" onclick="walkieAIStop()" style="color:#f44336; margin-top:8px;">Stop & Exit</button>
+    </div>
   </div>
 </div>
 
 </div><!-- /chatApp -->
+
+<!-- Social Panel (Live, Messages, Contacts, Payments) -->
+<div class="walkie-panel" id="socialPanel" style="left:0; right:auto; border-right:none; border-left:1px solid var(--accent2);">
+  <div class="walkie-header" style="background:linear-gradient(135deg, #2196f3, #9C27B0);">
+    <span>🌐 Aceline Social</span>
+    <span class="walkie-close" onclick="toggleSocial()">✕</span>
+  </div>
+  <div class="walkie-body">
+    <div style="display:flex; gap:4px; margin-bottom:16px;">
+      <button class="walkie-ctrl-btn active" onclick="socialTab('live')" id="socialTabLive">🔴 Live</button>
+      <button class="walkie-ctrl-btn" onclick="socialTab('messages')" id="socialTabMsgs">💬 Messages</button>
+      <button class="walkie-ctrl-btn" onclick="socialTab('contacts')" id="socialTabContacts">👥 Contacts</button>
+      <button class="walkie-ctrl-btn" onclick="socialTab('pay')" id="socialTabPay">💰 Pay</button>
+    </div>
+
+    <div id="socialLiveTab">
+      <button class="walkie-start-btn" style="background:linear-gradient(135deg,#f44336,#E91E63);" onclick="socialGoLive()">🔴 Go Live</button>
+      <div style="font-size:12px; color:var(--muted); margin:16px 0 8px;">Live Now:</div>
+      <div id="socialLiveList"></div>
+    </div>
+
+    <div id="socialMsgsTab" style="display:none;">
+      <div id="socialConvList"></div>
+      <div id="socialDmView" style="display:none;">
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <button class="walkie-ctrl-btn" onclick="socialBackToConvs()">← Back</button>
+          <div id="socialDmName" style="flex:1; text-align:center; font-weight:600;"></div>
+        </div>
+        <div id="socialDmMsgs" style="max-height:300px; overflow-y:auto; margin-bottom:12px;"></div>
+        <div class="walkie-join-input">
+          <input type="text" id="socialDmInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')socialSendDm()">
+          <button onclick="socialSendDm()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="socialContactsTab" style="display:none;">
+      <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">Your Contacts (auto-filled from calls):</div>
+      <div id="socialContactsList"></div>
+    </div>
+
+    <div id="socialPayTab" style="display:none;">
+      <div style="font-size:13px; font-weight:600; margin-bottom:12px;">Send Money</div>
+      <input type="text" class="auth-input" id="payReceiver" placeholder="@username or wallet address" style="margin-bottom:8px;">
+      <input type="number" class="auth-input" id="payAmount" placeholder="Amount (INC)" step="0.0001" style="margin-bottom:8px;">
+      <input type="text" class="auth-input" id="payMemo" placeholder="Memo (optional)" style="margin-bottom:12px;">
+      <button class="walkie-start-btn" onclick="socialSendPay()">Send INC</button>
+
+      <div style="font-size:13px; font-weight:600; margin:20px 0 12px;">Request Funds</div>
+      <input type="number" class="auth-input" id="reqAmount" placeholder="Amount (INC)" step="0.0001" style="margin-bottom:12px;">
+      <button class="walkie-ctrl-btn" style="background:var(--accent); color:white;" onclick="socialReqFunds()">Request INC</button>
+
+      <div style="font-size:13px; font-weight:600; margin:20px 0 12px;">On-Ramp (Buy INC)</div>
+      <input type="number" class="auth-input" id="onrampAmount" placeholder="USD amount" step="1" style="margin-bottom:12px;">
+      <button class="walkie-ctrl-btn" style="background:#00e676; color:#0a0a0f;" onclick="socialOnRamp()">Buy INC</button>
+
+      <div style="font-size:13px; font-weight:600; margin:20px 0 12px;">Off-Ramp (Sell INC)</div>
+      <input type="number" class="auth-input" id="offrampAmount" placeholder="INC amount" step="0.0001" style="margin-bottom:12px;">
+      <button class="walkie-ctrl-btn" style="background:#FFD700; color:#0a0a0f;" onclick="socialOffRamp()">Sell INC</button>
+
+      <div style="font-size:13px; font-weight:600; margin:20px 0 12px;">Transaction History</div>
+      <div id="socialTxHistory" style="max-height:200px; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
 
 <!-- FaceTime Incoming Call Screen -->
 <div class="facetime-incoming" id="facetimeIncoming">
@@ -788,6 +879,8 @@ body {
 const API_BASE = window.WAKKII_API || '';
 let ROOM_ID = window.WAKKII_ROOM || 'CLINE';
 let USER_NAME = window.WAKKII_USER || 'User';
+let USER_ID = '';
+let WALLET_ADDRESS = '';
 const POLL_INTERVAL = 3000;
 
 let lastCount = 0;
@@ -933,6 +1026,16 @@ function enterChat() {
   if (isFounder) {
     authFounderBadge.classList.add('show');
   }
+  // Set user ID and fetch wallet address for social/payments
+  USER_ID = userEmail || USER_NAME;
+  if (window.Social) Social.init(USER_ID, USER_NAME, WALLET_ADDRESS);
+  // Fetch wallet address
+  fetch(API_BASE + '/wallet/address').then(r => r.json()).then(d => {
+    if (d.address) {
+      WALLET_ADDRESS = d.address;
+      if (window.Social) Social.walletAddress = d.address;
+    }
+  }).catch(() => {});
   checkConnection();
   fetchMessages();
   setInterval(fetchMessages, POLL_INTERVAL);
@@ -1196,6 +1299,10 @@ async function checkConnection() {
 
 <!-- Aceline Walkie-Talki -->
 <script src="walkie-talki.js"></script>
+
+<!-- Aceline Social (Live, Messages, Contacts, Payments) -->
+<script src="social.js"></script>
+
 <script>
 // Walkie-Talki UI integration
 let walkie = null;
@@ -1480,6 +1587,328 @@ function facetimeEndCall() {
   document.getElementById('facetimeMuteBtn').textContent = '🎤';
   document.getElementById('facetimeCameraBtn').textContent = '📹';
 }
+
+// --- Aceline AI Voice Assistant ---
+let aiAssistant = null;
+
+function walkieStartAI() {
+  document.getElementById('walkieStart').style.display = 'none';
+  document.getElementById('walkieRoom').style.display = 'none';
+  document.getElementById('walkieAI').style.display = 'block';
+  if (!window.AcelineVoiceAssistant) {
+    walkieShowError('AI assistant module not loaded');
+    return;
+  }
+  aiAssistant = new AcelineVoiceAssistant(USER_NAME || 'User');
+  aiAssistant.onTranscript = (text) => {
+    document.getElementById('walkieAITranscript').innerHTML = '<strong>You:</strong> ' + text;
+  };
+  aiAssistant.onResponse = (text) => {
+    document.getElementById('walkieAIResponse').innerHTML = '<strong>Aceline:</strong> ' + text;
+  };
+  aiAssistant.onError = (msg) => {
+    document.getElementById('walkieAIStatus').textContent = 'Error: ' + msg;
+  };
+  aiAssistant.onListeningChange = (listening) => {
+    const btn = document.getElementById('walkieAIStartBtn');
+    const status = document.getElementById('walkieAIStatus');
+    if (listening) {
+      btn.textContent = 'Stop Listening';
+      btn.classList.add('active');
+      status.textContent = 'Listening... speak now';
+      status.style.color = '#00e676';
+    } else {
+      btn.textContent = 'Start Listening';
+      btn.classList.remove('active');
+      status.textContent = 'Click Start to begin';
+      status.style.color = 'var(--muted)';
+    }
+  };
+}
+
+function walkieAIToggle() {
+  if (!aiAssistant) return;
+  if (aiAssistant.listening) {
+    aiAssistant.stop();
+  } else {
+    aiAssistant.start();
+  }
+}
+
+function walkieAIStop() {
+  if (aiAssistant) aiAssistant.stop();
+  aiAssistant = null;
+  document.getElementById('walkieAI').style.display = 'none';
+  document.getElementById('walkieStart').style.display = 'block';
+  document.getElementById('walkieRoom').style.display = 'none';
+}
+
+// --- Social Panel ---
+let socialDmOtherId = null;
+let socialDmOtherName = null;
+let socialLivePollInterval = null;
+
+function toggleSocial() {
+  const panel = document.getElementById('socialPanel');
+  panel.classList.toggle('show');
+  if (panel.classList.contains('show')) {
+    if (window.Social && USER_ID && USER_NAME) {
+      Social.init(USER_ID, USER_NAME, WALLET_ADDRESS || '');
+    }
+    socialRefreshLive();
+    socialRefreshConvs();
+    socialRefreshContacts();
+    socialRefreshTxHistory();
+  } else {
+    if (socialLivePollInterval) clearInterval(socialLivePollInterval);
+  }
+}
+
+function socialTab(tab) {
+  ['Live', 'Msgs', 'Contacts', 'Pay'].forEach(t => {
+    document.getElementById('socialTab' + t).classList.remove('active');
+    document.getElementById('social' + t + 'Tab').style.display = 'none';
+  });
+  const cap = tab.charAt(0).toUpperCase() + tab.slice(1);
+  document.getElementById('socialTab' + cap).classList.add('active');
+  document.getElementById('social' + cap + 'Tab').style.display = 'block';
+
+  if (tab === 'live') socialRefreshLive();
+  if (tab === 'messages') socialRefreshConvs();
+  if (tab === 'contacts') socialRefreshContacts();
+  if (tab === 'pay') socialRefreshTxHistory();
+}
+
+// --- Live ---
+async function socialGoLive() {
+  const title = prompt('Live title:', USER_NAME + ' Live');
+  if (!title) return;
+  const result = await Social.goLive(title);
+  if (result.status === 'ok' && result.room_id) {
+    alert('You are LIVE! Room: ' + result.room_id);
+    // Auto-open walkie-talki with this room
+    toggleWalkie();
+    document.getElementById('walkieJoinCode').value = result.room_id;
+    walkieJoinRoom();
+  }
+}
+
+async function socialRefreshLive() {
+  if (!window.Social) return;
+  const result = await Social.getLiveBroadcasts();
+  const list = document.getElementById('socialLiveList');
+  if (!result.broadcasts || result.broadcasts.length === 0) {
+    list.innerHTML = '<div style="color:var(--muted); font-size:12px; text-align:center; padding:20px;">No live broadcasts</div>';
+    return;
+  }
+  list.innerHTML = result.broadcasts.map(b => `
+    <div class="walkie-participant" style="cursor:pointer;" onclick="socialJoinLive('${b.room_id}')">
+      <div class="walkie-participant-avatar" style="background:linear-gradient(135deg,#f44336,#E91E63);">${b.host_name?.charAt(0) || 'L'}</div>
+      <div class="walkie-participant-info">
+        <div class="walkie-participant-name">${b.title}</div>
+        <div class="walkie-participant-role">@${b.host_username} - ${b.listener_count} listeners</div>
+      </div>
+      <span style="color:#f44336; font-size:10px; font-weight:600;">LIVE</span>
+    </div>
+  `).join('');
+
+  // Poll for new broadcasts
+  if (socialLivePollInterval) clearInterval(socialLivePollInterval);
+  socialLivePollInterval = setInterval(socialRefreshLive, 10000);
+}
+
+function socialJoinLive(roomId) {
+  toggleWalkie();
+  document.getElementById('walkieJoinCode').value = roomId;
+  walkieJoinRoom();
+}
+
+// --- Messages ---
+async function socialRefreshConvs() {
+  if (!window.Social) return;
+  const result = await Social.getConversations();
+  const list = document.getElementById('socialConvList');
+  if (!result.conversations || result.conversations.length === 0) {
+    list.innerHTML = '<div style="color:var(--muted); font-size:12px; text-align:center; padding:20px;">No conversations yet</div>';
+    return;
+  }
+  list.innerHTML = result.conversations.map(c => `
+    <div class="walkie-participant" style="cursor:pointer;" onclick="socialOpenDm('${c.other_id}', '${c.other_name || c.other_username}')">
+      <div class="walkie-participant-avatar">${(c.other_name || c.other_username || '?').charAt(0).toUpperCase()}</div>
+      <div class="walkie-participant-info">
+        <div class="walkie-participant-name">${c.other_name || c.other_username}</div>
+        <div class="walkie-participant-role">${c.last_message || ''}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function socialOpenDm(otherId, otherName) {
+  socialDmOtherId = otherId;
+  socialDmOtherName = otherName;
+  document.getElementById('socialConvList').style.display = 'none';
+  document.getElementById('socialDmView').style.display = 'block';
+  document.getElementById('socialDmName').textContent = otherName;
+  await socialRefreshDms();
+}
+
+async function socialRefreshDms() {
+  if (!socialDmOtherId) return;
+  const result = await Social.getMessages(socialDmOtherId);
+  const msgs = document.getElementById('socialDmMsgs');
+  if (!result.messages || result.messages.length === 0) {
+    msgs.innerHTML = '<div style="color:var(--muted); font-size:12px; text-align:center; padding:20px;">No messages yet</div>';
+    return;
+  }
+  msgs.innerHTML = result.messages.map(m => {
+    const isMe = m.sender_id === USER_ID;
+    return `<div style="margin-bottom:8px; text-align:${isMe ? 'right' : 'left'};">
+      <div style="display:inline-block; max-width:80%; padding:8px 12px; border-radius:12px;
+        background:${isMe ? 'var(--accent)' : 'var(--bg)'}; color:${isMe ? 'white' : 'var(--text)'};
+        font-size:13px;">${m.text}</div>
+    </div>`;
+  }).join('');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function socialSendDm() {
+  const input = document.getElementById('socialDmInput');
+  const text = input.value.trim();
+  if (!text || !socialDmOtherId) return;
+  input.value = '';
+  await Social.sendMessage(socialDmOtherId, text);
+  await socialRefreshDms();
+}
+
+function socialBackToConvs() {
+  document.getElementById('socialConvList').style.display = 'block';
+  document.getElementById('socialDmView').style.display = 'none';
+  socialDmOtherId = null;
+  socialRefreshConvs();
+}
+
+// --- Contacts ---
+async function socialRefreshContacts() {
+  if (!window.Social) return;
+  const result = await Social.getContacts();
+  const list = document.getElementById('socialContactsList');
+  if (!result.contacts || result.contacts.length === 0) {
+    list.innerHTML = '<div style="color:var(--muted); font-size:12px; text-align:center; padding:20px;">No contacts yet. Contacts auto-fill when you talk/FaceTime.</div>';
+    return;
+  }
+  list.innerHTML = result.contacts.map(c => `
+    <div class="walkie-participant">
+      <div class="walkie-participant-avatar">${(c.contact_name || '?').charAt(0).toUpperCase()}</div>
+      <div class="walkie-participant-info">
+        <div class="walkie-participant-name">${c.contact_name}</div>
+        <div class="walkie-participant-role">@${c.contact_username || 'unknown'} - ${c.source}</div>
+      </div>
+      <button class="walkie-ctrl-btn" style="flex:none; padding:4px 10px; font-size:11px;" onclick="socialDmContact('${c.contact_id}', '${c.contact_name}')">Message</button>
+    </div>
+  `).join('');
+}
+
+async function socialDmContact(contactId, contactName) {
+  socialTab('messages');
+  await socialOpenDm(contactId, contactName);
+}
+
+// --- Payments ---
+async function socialSendPay() {
+  const receiver = document.getElementById('payReceiver').value.trim();
+  const amount = parseFloat(document.getElementById('payAmount').value);
+  const memo = document.getElementById('payMemo').value.trim();
+  if (!receiver || !amount || amount <= 0) {
+    alert('Enter receiver and amount');
+    return;
+  }
+  let receiverId = null;
+  let receiverAddress = null;
+  if (receiver.startsWith('@')) {
+    // Look up by username
+    const profile = await Social.api('/social/profile/by_username/' + receiver.slice(1));
+    if (profile.user_id) receiverId = profile.user_id;
+  } else if (receiver.startsWith('0x') && receiver.length > 20) {
+    receiverAddress = receiver;
+  } else {
+    receiverId = receiver;
+  }
+  const result = await Social.sendFunds(receiverId, receiverAddress, amount, 'INC', memo);
+  if (result.status === 'ok') {
+    alert('Sent ' + amount + ' INC');
+    document.getElementById('payReceiver').value = '';
+    document.getElementById('payAmount').value = '';
+    document.getElementById('payMemo').value = '';
+    socialRefreshTxHistory();
+  } else {
+    alert('Error: ' + (result.detail || 'Failed'));
+  }
+}
+
+async function socialReqFunds() {
+  const amount = parseFloat(document.getElementById('reqAmount').value);
+  if (!amount || amount <= 0) { alert('Enter amount'); return; }
+  const result = await Social.requestFunds(amount, 'INC', '');
+  if (result.status === 'ok') {
+    alert('Funds requested: ' + amount + ' INC');
+    document.getElementById('reqAmount').value = '';
+  }
+}
+
+async function socialOnRamp() {
+  const amount = parseFloat(document.getElementById('onrampAmount').value);
+  if (!amount || amount <= 0) { alert('Enter USD amount'); return; }
+  const result = await Social.onRamp(amount, 'USD');
+  if (result.status === 'ok') {
+    alert('Bought ' + result.crypto_amount.toFixed(2) + ' INC for $' + amount);
+    document.getElementById('onrampAmount').value = '';
+    socialRefreshTxHistory();
+  }
+}
+
+async function socialOffRamp() {
+  const amount = parseFloat(document.getElementById('offrampAmount').value);
+  if (!amount || amount <= 0) { alert('Enter INC amount'); return; }
+  const result = await Social.offRamp(amount, 'INC');
+  if (result.status === 'ok') {
+    alert('Sold ' + amount + ' INC for $' + result.fiat_amount.toFixed(2));
+    document.getElementById('offrampAmount').value = '';
+    socialRefreshTxHistory();
+  }
+}
+
+async function socialRefreshTxHistory() {
+  if (!window.Social) return;
+  const result = await Social.getTransactionHistory();
+  const list = document.getElementById('socialTxHistory');
+  if (!result.transactions || result.transactions.length === 0) {
+    list.innerHTML = '<div style="color:var(--muted); font-size:12px; text-align:center; padding:10px;">No transactions yet</div>';
+    return;
+  }
+  list.innerHTML = result.transactions.map(t => {
+    const isSent = t.sender_id === USER_ID;
+    return `<div style="padding:8px; background:var(--bg); border-radius:8px; margin-bottom:6px; font-size:12px;">
+      <div style="display:flex; justify-content:space-between;">
+        <span>${isSent ? '↗ Sent' : '↙ Received'}</span>
+        <span style="color:${isSent ? '#f44336' : '#00e676'}; font-weight:600;">${isSent ? '-' : '+'}${t.amount} ${t.token}</span>
+      </div>
+      ${t.memo ? `<div style="color:var(--muted); font-size:11px;">${t.memo}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// --- Auto-contact filing on FaceTime/call ---
+const origFacetimeStartCall = window.facetimeStartCall;
+window.facetimeStartCall = async function() {
+  await origFacetimeStartCall();
+  // Auto-add contact when call starts
+  if (walkie && Social.userId) {
+    const participants = walkie.getParticipants().filter(p => p.peerId !== walkie.peer.id);
+    participants.forEach(p => {
+      Social.autoAddContact(p.peerId, p.name, '', 'facetime');
+    });
+  }
+};
 </script>
 </body>
 </html>

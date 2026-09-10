@@ -263,6 +263,167 @@ def wallet_backup():
     except Exception as e:
         return jsonify({"status": "error", "detail": str(e)})
 
+# --- Social: Profiles, Following, Contacts, Messaging, Live ---
+
+@app.route("/social/profile", methods=["POST"])
+def social_profile():
+    from social import create_or_update_profile
+    body = request.json or {}
+    result = create_or_update_profile(body.get("user_id",""), body.get("username",""),
+        body.get("display_name"), body.get("bio"), body.get("avatar"))
+    return jsonify(result or {"status": "error"})
+
+@app.route("/social/profile/<user_id>")
+def social_get_profile(user_id):
+    from social import get_profile
+    return jsonify(get_profile(user_id) or {"status": "error", "detail": "Not found"})
+
+@app.route("/social/profile/by_username/<username>")
+def social_get_by_username(username):
+    from social import get_profile_by_username
+    return jsonify(get_profile_by_username(username) or {"status": "error", "detail": "Not found"})
+
+@app.route("/social/search")
+def social_search():
+    from social import search_users
+    q = request.args.get("q", "")
+    return jsonify({"results": search_users(q)})
+
+@app.route("/social/follow", methods=["POST"])
+def social_follow():
+    from social import follow_user
+    body = request.json or {}
+    return jsonify(follow_user(body.get("follower_id",""), body.get("following_id","")))
+
+@app.route("/social/unfollow", methods=["POST"])
+def social_unfollow():
+    from social import unfollow_user
+    body = request.json or {}
+    return jsonify(unfollow_user(body.get("follower_id",""), body.get("following_id","")))
+
+@app.route("/social/following/<user_id>")
+def social_get_following(user_id):
+    from social import get_following
+    return jsonify({"following": get_following(user_id)})
+
+@app.route("/social/followers/<user_id>")
+def social_get_followers(user_id):
+    from social import get_followers
+    return jsonify({"followers": get_followers(user_id)})
+
+@app.route("/social/contacts/<owner_id>")
+def social_get_contacts(owner_id):
+    from social import get_contacts
+    return jsonify({"contacts": get_contacts(owner_id)})
+
+@app.route("/social/contacts/add", methods=["POST"])
+def social_add_contact():
+    from social import add_contact
+    body = request.json or {}
+    return jsonify(add_contact(body.get("owner_id",""), body.get("contact_id",""),
+        body.get("contact_name",""), body.get("contact_username"), body.get("source","manual"), body.get("notes","")))
+
+@app.route("/social/contacts/auto", methods=["POST"])
+def social_auto_contact():
+    from social import auto_add_contact_from_call
+    body = request.json or {}
+    auto_add_contact_from_call(body.get("owner_id",""), body.get("owner_name",""),
+        body.get("contact_id",""), body.get("contact_name",""),
+        body.get("contact_username",""), body.get("call_type","facetime"))
+    return jsonify({"status": "ok"})
+
+@app.route("/social/messages/send", methods=["POST"])
+def social_send_msg():
+    from social import send_message
+    body = request.json or {}
+    return jsonify(send_message(body.get("sender_id",""), body.get("receiver_id",""), body.get("text","")))
+
+@app.route("/social/messages/<user_id>/<other_id>")
+def social_get_msgs(user_id, other_id):
+    from social import get_messages
+    return jsonify({"messages": get_messages(user_id, other_id)})
+
+@app.route("/social/conversations/<user_id>")
+def social_get_convs(user_id):
+    from social import get_conversations
+    return jsonify({"conversations": get_conversations(user_id)})
+
+@app.route("/social/unread/<user_id>")
+def social_unread(user_id):
+    from social import get_unread_count
+    return jsonify({"count": get_unread_count(user_id)})
+
+# --- Live Broadcasting ---
+
+@app.route("/live/go_live", methods=["POST"])
+def live_go():
+    from social import go_live
+    body = request.json or {}
+    return jsonify(go_live(body.get("user_id",""), body.get("title","Live"), body.get("description",""), body.get("room_id")))
+
+@app.route("/live/end", methods=["POST"])
+def live_end():
+    from social import end_live
+    body = request.json or {}
+    return jsonify(end_live(body.get("user_id","")))
+
+@app.route("/live/broadcasts")
+def live_list():
+    from social import get_live_broadcasts
+    return jsonify({"broadcasts": get_live_broadcasts()})
+
+@app.route("/live/chat/send", methods=["POST"])
+def live_chat_send():
+    from social import send_live_chat
+    body = request.json or {}
+    return jsonify(send_live_chat(body.get("room_id",""), body.get("sender_id",""), body.get("sender_name",""), body.get("text","")))
+
+@app.route("/live/chat/<room_id>")
+def live_chat_get(room_id):
+    from social import get_live_chat
+    return jsonify({"messages": get_live_chat(room_id)})
+
+# --- Payments ---
+
+@app.route("/payments/send", methods=["POST"])
+def pay_send():
+    from payments import send_funds
+    body = request.json or {}
+    return jsonify(send_funds(body.get("sender_id",""), body.get("sender_address",""),
+        body.get("receiver_id"), body.get("receiver_address"), body.get("amount",0),
+        body.get("token","INC"), body.get("memo","")))
+
+@app.route("/payments/request", methods=["POST"])
+def pay_request():
+    from payments import request_funds
+    body = request.json or {}
+    return jsonify(request_funds(body.get("requester_id",""), body.get("requester_address",""),
+        body.get("amount",0), body.get("token","INC"), body.get("memo","")))
+
+@app.route("/payments/requests/<user_id>")
+def pay_get_requests(user_id):
+    from payments import get_fund_requests
+    return jsonify({"requests": get_fund_requests(user_id)})
+
+@app.route("/payments/onramp", methods=["POST"])
+def pay_onramp():
+    from payments import onramp
+    body = request.json or {}
+    return jsonify(onramp(body.get("user_id",""), body.get("user_address",""),
+        body.get("fiat_amount",0), body.get("fiat_currency","USD")))
+
+@app.route("/payments/offramp", methods=["POST"])
+def pay_offramp():
+    from payments import offramp
+    body = request.json or {}
+    return jsonify(offramp(body.get("user_id",""), body.get("user_address",""),
+        body.get("crypto_amount",0), body.get("crypto_token","INC")))
+
+@app.route("/payments/history/<user_id>")
+def pay_history(user_id):
+    from payments import get_transaction_history
+    return jsonify({"transactions": get_transaction_history(user_id)})
+
 @app.route("/")
 def serve_ui():
     return send_file(os.path.join("ui", "index.html"))

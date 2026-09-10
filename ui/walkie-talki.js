@@ -779,3 +779,110 @@ class AcelineFaceTime {
 // Export both classes
 window.AcelineWalkieTalki = AcelineWalkieTalki;
 window.AcelineFaceTime = AcelineFaceTime;
+
+/**
+ * Aceline AI Voice Assistant — Talk to Aceline on walkie-talki for real-time dev
+ *
+ * Uses the chat server's /agent endpoint to talk to Aceline AI.
+ * Voice in via mic, text response displayed + spoken via TTS.
+ */
+class AcelineVoiceAssistant {
+  constructor(userName) {
+    this.userName = userName || 'User';
+    this.listening = false;
+    this.recognition = null;
+    this.synthesis = window.speechSynthesis;
+    this.apiBase = window.WAKKII_API || '';
+    this.onTranscript = null;
+    this.onResponse = null;
+    this.onError = null;
+    this.onListeningChange = null;
+  }
+
+  start() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      this.notifyError('Speech recognition not supported. Use Chrome/Edge.');
+      return false;
+    }
+
+    this.recognition = new SpeechRecognition();
+    this.recognition.continuous = true;
+    this.recognition.interimResults = true;
+    this.recognition.lang = 'en-US';
+
+    this.recognition.onresult = (event) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      if (event.results[event.results.length - 1].isFinal) {
+        this.handleUserInput(transcript.trim());
+      }
+    };
+
+    this.recognition.onerror = (e) => {
+      this.notifyError('Speech error: ' + e.error);
+    };
+
+    this.recognition.onend = () => {
+      if (this.listening) {
+        try { this.recognition.start(); } catch {}
+      }
+    };
+
+    try {
+      this.recognition.start();
+      this.listening = true;
+      if (this.onListeningChange) this.onListeningChange(true);
+      return true;
+    } catch (e) {
+      this.notifyError('Could not start mic: ' + e.message);
+      return false;
+    }
+  }
+
+  stop() {
+    this.listening = false;
+    if (this.recognition) {
+      try { this.recognition.stop(); } catch {}
+    }
+    if (this.synthesis) this.synthesis.cancel();
+    if (this.onListeningChange) this.onListeningChange(false);
+  }
+
+  async handleUserInput(text) {
+    if (this.onTranscript) this.onTranscript(text);
+
+    try {
+      const resp = await fetch(this.apiBase + '/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          room: 'ACELINE_AI',
+          message: text,
+          user: this.userName
+        })
+      });
+      const data = await resp.json();
+      const reply = data.response || data.message || 'I did not understand that.';
+
+      if (this.onResponse) this.onResponse(reply);
+      this.speak(reply);
+    } catch (e) {
+      this.notifyError('Aceline AI error: ' + e.message);
+    }
+  }
+
+  speak(text) {
+    if (!this.synthesis) return;
+    this.synthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    this.synthesis.speak(utterance);
+  }
+}
+
+window.AcelineVoiceAssistant = AcelineVoiceAssistant;

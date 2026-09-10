@@ -121,6 +121,47 @@ MCP tools:
 - `claim_task(agent_id, task_desc)` / `get_active_tasks()` / `complete_task(task_id)`
 - `post_suggestion(suggestion)` / `get_suggestions()`
 
+## Aceline Social — Live, Messaging, Contacts, Payments
+
+### Go Live (Live Broadcasting)
+- Click 🌐 Social → 🔴 Live → "Go Live"
+- Start a live broadcast, share your room code
+- Others see you in the Live list and can join
+- Live chat during broadcasts
+- Auto-opens walkie-talki with your room code
+
+### Direct Messaging
+- 🌐 Social → 💬 Messages
+- DM any user by @username
+- Conversation list with last message
+- Real-time message polling
+
+### Following
+- Follow/unfollow users
+- See who you follow and who follows you
+- Search users by name/username
+
+### Contacts (Auto-Filing)
+- Contacts auto-fill when you talk/FaceTime
+- Each call adds both parties to each other's contacts
+- Manual add also available
+- View all contacts with source (facetime/walkie/manual)
+
+### Wallet Payments
+- 🌐 Social → 💰 Pay
+- **Send INC** to @username or wallet address
+- **Request funds** from others
+- **On-Ramp** — buy INC with USD (simulated)
+- **Off-Ramp** — sell INC for USD (simulated)
+- Full transaction history
+
+### Aceline AI Voice Assistant
+- 🎙️ Walkie → "Talk to Aceline AI"
+- Voice in via mic (speech recognition)
+- Aceline responds via text + speech (TTS)
+- Real-time development chat
+- Uses /agent endpoint with GLM-5.1
+
 ## Walkie-Talki — Voice Rooms (Wakkii Links)
 
 Based on the Wakkii Links walkie-talki system from Soulmate OS. Full WebRTC P2P voice rooms.
