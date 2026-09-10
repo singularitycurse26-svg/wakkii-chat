@@ -121,6 +121,38 @@ MCP tools:
 - `claim_task(agent_id, task_desc)` / `get_active_tasks()` / `complete_task(task_id)`
 - `post_suggestion(suggestion)` / `get_suggestions()`
 
+## Walkie-Talki — Voice Rooms (Wakkii Links)
+
+Based on the Wakkii Links walkie-talki system from Soulmate OS. Full WebRTC P2P voice rooms.
+
+### Features:
+- **Push-to-talk** — hold the button to speak, release to listen
+- **Room-based** — 6-char room codes, shareable via link
+- **Host/Listener roles** — host controls who can speak
+- **Raise hand** — listeners can request to speak
+- **Video support** — optional camera on/off
+- **Presence tracking** — heartbeats every 5s
+- **Max 8 participants** per room
+- **No server needed for voice** — pure P2P via PeerJS/WebRTC
+- **Share link** — `http://localhost:8085/#aceline-ROOMCODE`
+- **Auto-join from link** — opening a share link auto-joins the room
+
+### How it works:
+1. Click the 🎙️ Walkie badge in the header
+2. Click "Start Voice Room" to create, or enter a code to join
+3. Share the link with anyone — they tap it and join instantly
+4. Hold the "HOLD TO TALK" button to speak
+5. Raise hand to request speaking (if listener)
+6. Host can approve speakers
+7. Toggle video on/off
+8. See all participants with speaking indicators
+
+### Technical:
+- Uses PeerJS (WebRTC) for peer-to-peer audio/video
+- No server needed for voice — all P2P
+- Echo cancellation + noise suppression built in
+- Rooms identified by 6-char codes (A-Z, 2-9, no ambiguous chars)
+
 ## Incentives Inc. Wallet — Hardcoded in Every Download
 
 **No exceptions.** Every download of wakkii-chat comes with a dedicated Incentives Inc. wallet.
@@ -407,13 +439,18 @@ wakkii-chat/
 ├── multi_agent.py     # Multi-agent launcher
 ├── auth.py            # Authentication system (founder + users)
 ├── wallet.py          # Incentives Inc. wallet (hardcoded, every download)
-├── start.ps1          # One-click start script
+├── desktop.py         # Windows desktop UI (smart version detection)
+├── setup.py           # Setup wizard (SmartScreen workaround)
+├── install.ps1        # One-click installer
+├── start.ps1          # Start servers + agents
+├── start-desktop.ps1  # Start desktop UI
 ├── requirements.txt   # Python dependencies
 ├── .gitignore
 ├── ui/
-│   ├── index.html     # Full-page chat UI with auth + wallet + room selector
+│   ├── index.html     # Full chat UI (auth + wallet + walkie + room selector)
 │   ├── wakkii-widget.js  # Embeddable chat widget
-│   └── radio-widget.js   # V-103 radio widget
+│   ├── radio-widget.js   # V-103 radio widget
+│   └── walkie-talki.js    # Voice rooms (WebRTC/PeerJS)
 └── data/              # Message persistence (gitignored)
 ```
 

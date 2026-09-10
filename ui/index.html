@@ -344,6 +344,121 @@ body {
 .wallet-powered {
   font-size: 10px; color: var(--muted); text-align: center;
 }
+
+/* Walkie-Talki Panel */
+.walkie-panel {
+  position: fixed; top: 0; left: 0; bottom: 0; width: 380px;
+  background: var(--surface); z-index: 99998;
+  border-right: 1px solid var(--accent2);
+  box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+  overflow-y: auto; font-family: 'Segoe UI', sans-serif;
+  display: none;
+}
+.walkie-panel.show { display: block; }
+.walkie-header {
+  background: linear-gradient(135deg, #00e676, #00bfa5);
+  padding: 14px 18px; font-size: 15px; font-weight: 600; color: #0a0a0f;
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 1;
+}
+.walkie-close { cursor: pointer; font-size: 18px; opacity: 0.8; }
+.walkie-close:hover { opacity: 1; }
+.walkie-body { padding: 16px; }
+.walkie-start-screen { text-align: center; padding: 20px 0; }
+.walkie-start-btn {
+  width: 100%; background: linear-gradient(135deg, #00e676, #00bfa5);
+  color: #0a0a0f; border: none; padding: 14px; border-radius: 12px;
+  font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 12px;
+}
+.walkie-join-input {
+  display: flex; gap: 8px; margin-top: 12px;
+}
+.walkie-join-input input {
+  flex: 1; background: var(--bg); border: 1px solid var(--accent2);
+  color: var(--text); padding: 10px 14px; border-radius: 10px;
+  font-size: 14px; text-transform: uppercase; outline: none;
+}
+.walkie-join-input button {
+  background: var(--accent); color: white; border: none;
+  padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: 600;
+}
+.walkie-room-info {
+  background: var(--bg); padding: 12px; border-radius: 10px;
+  margin-bottom: 12px; border: 1px solid var(--accent2);
+}
+.walkie-room-id {
+  font-size: 20px; font-weight: 700; color: #00e676; font-family: monospace;
+}
+.walkie-share-link {
+  display: flex; gap: 8px; margin-top: 8px;
+}
+.walkie-share-link input {
+  flex: 1; background: var(--bg); border: 1px solid var(--accent2);
+  color: var(--text); padding: 8px 10px; border-radius: 8px;
+  font-size: 11px; font-family: monospace;
+}
+.walkie-share-link button {
+  background: var(--surface); border: 1px solid var(--accent2);
+  color: var(--text); padding: 8px 12px; border-radius: 8px;
+  cursor: pointer; font-size: 12px;
+}
+.walkie-ptt-button {
+  width: 100%; padding: 24px; border-radius: 16px;
+  background: linear-gradient(135deg, #00e676, #00bfa5);
+  color: #0a0a0f; border: none; font-size: 18px; font-weight: 700;
+  cursor: pointer; user-select: none; transition: all 0.1s;
+  margin-bottom: 12px;
+}
+.walkie-ptt-button:active, .walkie-ptt-button.active {
+  background: linear-gradient(135deg, #ff6b9d, #E91E63);
+  color: white; transform: scale(0.98);
+}
+.walkie-ptt-button:disabled {
+  opacity: 0.5; cursor: not-allowed;
+}
+.walkie-controls {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+.walkie-ctrl-btn {
+  flex: 1; background: var(--bg); border: 1px solid var(--accent2);
+  color: var(--text); padding: 10px; border-radius: 10px;
+  cursor: pointer; font-size: 13px; transition: all 0.2s;
+}
+.walkie-ctrl-btn:hover { background: var(--accent2); }
+.walkie-ctrl-btn.active { background: #00e676; color: #0a0a0f; }
+.walkie-participants {
+  margin-top: 12px;
+}
+.walkie-participant {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; background: var(--bg); border-radius: 8px;
+  margin-bottom: 6px; border: 1px solid var(--accent2);
+}
+.walkie-participant-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, #00e676, #00bfa5);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: #0a0a0f;
+}
+.walkie-participant-info { flex: 1; }
+.walkie-participant-name { font-size: 13px; font-weight: 600; }
+.walkie-participant-role { font-size: 10px; color: var(--muted); }
+.walkie-speaking-indicator {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #00e676; animation: pulse 1s infinite;
+}
+.walkie-hand-raised { color: #FFD700; }
+.walkie-status {
+  text-align: center; padding: 8px; font-size: 12px;
+  color: var(--muted); margin-bottom: 12px;
+}
+.walkie-status.live { color: #00e676; }
+.walkie-error {
+  background: rgba(244,67,54,0.1); border: 1px solid #f44336;
+  color: #f44336; padding: 10px; border-radius: 8px;
+  font-size: 12px; margin-bottom: 12px; display: none;
+}
+.walkie-error.show { display: block; }
 </style>
 </head>
 <body>
@@ -407,6 +522,7 @@ body {
   </div>
   <div class="devin-badge" id="devinBadge"> Devin</div>
   <div class="devin-badge" id="walletBadge" style="cursor:pointer; background:rgba(255,215,0,0.15); color:#FFD700;" onclick="toggleWallet()">💰 INC Wallet</div>
+  <div class="devin-badge" id="walkieBadge" style="cursor:pointer; background:rgba(0,230,118,0.15); color:#00e676;" onclick="toggleWalkie()">🎙️ Walkie</div>
 </div>
 
 <div class="room-selector" id="roomSelector">
@@ -471,6 +587,63 @@ body {
     </div>
     <div class="wallet-footer">
       <div class="wallet-powered">Incentives Inc. — Hardcoded in every download</div>
+    </div>
+  </div>
+</div>
+
+<!-- Walkie-Talki Panel (voice rooms) -->
+<div class="walkie-panel" id="walkiePanel">
+  <div class="walkie-header">
+    <span>🎙️ Aceline Walkie-Talki</span>
+    <span class="walkie-close" onclick="toggleWalkie()">✕</span>
+  </div>
+  <div class="walkie-body" id="walkieBody">
+    <!-- Start screen -->
+    <div class="walkie-start-screen" id="walkieStart">
+      <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">
+        Start a live voice room. Share the link — they tap it and join instantly. No app download needed.
+      </p>
+      <button class="walkie-start-btn" onclick="walkieCreateRoom()">
+        🎙️ Start Voice Room
+      </button>
+      <div style="margin-top:20px;">
+        <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">Or join with a code:</div>
+        <div class="walkie-join-input">
+          <input type="text" id="walkieJoinCode" placeholder="ROOM CODE" maxlength="6">
+          <button onclick="walkieJoinRoom()">Join</button>
+        </div>
+      </div>
+      <div class="walkie-error" id="walkieError"></div>
+    </div>
+
+    <!-- Room screen (hidden until joined) -->
+    <div id="walkieRoom" style="display:none;">
+      <div class="walkie-room-info">
+        <div style="font-size:11px; color:var(--muted);">Room Code</div>
+        <div class="walkie-room-id" id="walkieRoomId">------</div>
+        <div class="walkie-share-link">
+          <input type="text" id="walkieShareLink" readonly>
+          <button onclick="walkieCopyLink()">Copy</button>
+        </div>
+      </div>
+
+      <div class="walkie-status" id="walkieStatus">Connecting...</div>
+
+      <button class="walkie-ptt-button" id="walkiePttButton"
+              onmousedown="walkiePttStart()" onmouseup="walkiePttStop()"
+              ontouchstart="walkiePttStart()" ontouchend="walkiePttStop()">
+        🎤 HOLD TO TALK
+      </button>
+
+      <div class="walkie-controls">
+        <button class="walkie-ctrl-btn" id="walkieHandBtn" onclick="walkieRaiseHand()">✋ Raise Hand</button>
+        <button class="walkie-ctrl-btn" id="walkieVideoBtn" onclick="walkieToggleVideo()">📹 Video</button>
+        <button class="walkie-ctrl-btn" onclick="walkieLeaveRoom()" style="color:#f44336;">📞 Leave</button>
+      </div>
+
+      <div class="walkie-participants" id="walkieParticipants">
+        <!-- Participants populated by JS -->
+      </div>
     </div>
   </div>
 </div>
@@ -884,5 +1057,163 @@ async function checkConnection() {
 
 <!-- V-103 Radio Widget (separate floating widget, bottom-left) -->
 <script src="radio-widget.js"></script>
+
+<!-- PeerJS for WebRTC walkie-talki -->
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+<!-- Aceline Walkie-Talki -->
+<script src="walkie-talki.js"></script>
+<script>
+// Walkie-Talki UI integration
+let walkie = null;
+
+function toggleWalkie() {
+  const panel = document.getElementById('walkiePanel');
+  panel.classList.toggle('show');
+}
+
+function walkieShowError(msg) {
+  const el = document.getElementById('walkieError');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+function walkieCreateRoom() {
+  if (!window.AcelineWalkieTalki) {
+    walkieShowError('Walkie-Talki module not loaded');
+    return;
+  }
+  walkie = new AcelineWalkieTalki(USER_NAME || 'User');
+  walkie.onError = walkieShowError;
+  walkie.onStateChange = walkieUpdateState;
+  walkie.onParticipantsChange = walkieUpdateParticipants;
+  walkie.createRoom('ptt', 'speaker');
+  document.getElementById('walkieStart').style.display = 'none';
+  document.getElementById('walkieRoom').style.display = 'block';
+}
+
+function walkieJoinRoom() {
+  const code = document.getElementById('walkieJoinCode').value.trim().toUpperCase();
+  if (!code || code.length < 4) {
+    walkieShowError('Enter a valid room code');
+    return;
+  }
+  if (!window.AcelineWalkieTalki) {
+    walkieShowError('Walkie-Talki module not loaded');
+    return;
+  }
+  walkie = new AcelineWalkieTalki(USER_NAME || 'User');
+  walkie.onError = walkieShowError;
+  walkie.onStateChange = walkieUpdateState;
+  walkie.onParticipantsChange = walkieUpdateParticipants;
+  walkie.joinRoom(code, 'speaker');
+  document.getElementById('walkieStart').style.display = 'none';
+  document.getElementById('walkieRoom').style.display = 'block';
+}
+
+function walkieUpdateState(state) {
+  document.getElementById('walkieRoomId').textContent = state.roomId || '------';
+  document.getElementById('walkieShareLink').value = walkie ? walkie.getShareUrl() : '';
+
+  const statusEl = document.getElementById('walkieStatus');
+  if (state.connected) {
+    statusEl.textContent = state.isHost ? 'LIVE (Host)' : 'LIVE';
+    statusEl.classList.add('live');
+  } else {
+    statusEl.textContent = 'Connecting...';
+    statusEl.classList.remove('live');
+  }
+
+  const pttBtn = document.getElementById('walkiePttButton');
+  if (state.micEnabled) {
+    pttBtn.classList.add('active');
+    pttBtn.textContent = 'SPEAKING...';
+  } else {
+    pttBtn.classList.remove('active');
+    pttBtn.textContent = 'HOLD TO TALK';
+  }
+}
+
+function walkieUpdateParticipants(participants) {
+  const el = document.getElementById('walkieParticipants');
+  if (!participants || participants.length === 0) {
+    el.innerHTML = '<div style="color:var(--muted); font-size:12px; text-align:center;">No participants yet</div>';
+    return;
+  }
+  el.innerHTML = participants.map(p => `
+    <div class="walkie-participant">
+      <div class="walkie-participant-avatar">${p.name.charAt(0).toUpperCase()}</div>
+      <div class="walkie-participant-info">
+        <div class="walkie-participant-name">
+          ${p.name} ${p.isHost ? '👑' : ''}
+          ${p.handRaised ? '<span class="walkie-hand-raised">✋</span>' : ''}
+        </div>
+        <div class="walkie-participant-role">${p.role} ${p.videoEnabled ? '📹' : ''}</div>
+      </div>
+      ${p.speaking ? '<div class="walkie-speaking-indicator"></div>' : ''}
+      ${!p.isHost && p.handRaised && walkie && walkie.isHost ? 
+        `<button class="walkie-ctrl-btn" style="flex:none; padding:4px 10px; font-size:11px;" onclick="walkieApprove('${p.peerId}')">Approve</button>` : ''}
+    </div>
+  `).join('');
+}
+
+function walkiePttStart() {
+  if (walkie) walkie.pushToTalkStart();
+}
+
+function walkiePttStop() {
+  if (walkie) walkie.pushToTalkStop();
+}
+
+function walkieRaiseHand() {
+  if (!walkie) return;
+  const btn = document.getElementById('walkieHandBtn');
+  const isRaised = btn.classList.contains('active');
+  walkie.raiseHand(!isRaised);
+  btn.classList.toggle('active');
+  btn.textContent = isRaised ? '✋ Raise Hand' : '✋ Hand Raised';
+}
+
+function walkieToggleVideo() {
+  if (walkie) walkie.toggleVideo();
+  const btn = document.getElementById('walkieVideoBtn');
+  btn.classList.toggle('active');
+}
+
+function walkieApprove(peerId) {
+  if (walkie) walkie.approveSpeaker(peerId);
+}
+
+function walkieLeaveRoom() {
+  if (walkie) walkie.leaveRoom();
+  walkie = null;
+  document.getElementById('walkieStart').style.display = 'block';
+  document.getElementById('walkieRoom').style.display = 'none';
+  document.getElementById('walkieHandBtn').classList.remove('active');
+  document.getElementById('walkieVideoBtn').classList.remove('active');
+}
+
+function walkieCopyLink() {
+  const input = document.getElementById('walkieShareLink');
+  input.select();
+  navigator.clipboard.writeText(input.value);
+}
+
+// Auto-join from hash
+window.addEventListener('load', () => {
+  const hash = window.location.hash;
+  if (hash.startsWith('#aceline-')) {
+    const roomId = hash.slice(9);
+    if (roomId) {
+      setTimeout(() => {
+        toggleWalkie();
+        document.getElementById('walkieJoinCode').value = roomId;
+        walkieJoinRoom();
+      }, 1000);
+    }
+  }
+});
+</script>
 </body>
 </html>
