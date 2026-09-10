@@ -25,6 +25,16 @@ MONEY_ASKING_FINE = 25.0  # INC tokens to founder
 VICTIM_FINE = 25.0  # INC tokens to the person who was asked
 TOTAL_FINE = MONEY_ASKING_FINE + VICTIM_FINE  # 50 INC total
 
+# Fine system is ON HOLD until INC stablecoin is created and deployed
+# Conditions for reactivation:
+#   1. INC stablecoin created and deployed on-chain
+#   2. INC added to Soulmate OS platform
+#   3. Aceline becomes an OS
+#   4. All Incentives Inc. company products integrated
+#   5. Incentives Inc. AI company corporation international entity formed
+FINE_ON_HOLD = True
+FINE_HOLD_REASON = "Waiting for INC stablecoin creation and Incentives Inc. corporate entity formation"
+
 def init_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(str(DB_PATH)) as conn:
@@ -198,6 +208,8 @@ def reactivate_user(user_id):
 def flag_for_money_asking(flagged_user_id, flagged_by, reason, evidence="", victim_id=None, victim_username=None):
     """Flag a user for asking for money. Account put on hold.
     Fine: 25 INC to founder + 25 INC to the person they asked = 50 INC total.
+    NOTE: Fine collection is ON HOLD until INC stablecoin is deployed.
+    Account is still flagged + suspended, but no payment required until hold lifts.
     """
     flag_id = hashlib.sha256(f"{flagged_user_id}:{time.time()}".encode()).hexdigest()[:16]
     total_fine = TOTAL_FINE
@@ -209,12 +221,22 @@ def flag_for_money_asking(flagged_user_id, flagged_by, reason, evidence="", vict
             (flag_id, flagged_user_id, flagged_by, victim_id, victim_username,
              reason, evidence, total_fine, MONEY_ASKING_FINE, VICTIM_FINE, time.time())
         )
-        conn.execute(
-            "UPDATE verifications SET suspended = 1, suspended_reason = 'Flagged for asking money', flagged_count = flagged_count + 1, fine_owed = fine_owed + ? WHERE user_id = ?",
-            (total_fine, flagged_user_id)
-        )
+        if FINE_ON_HOLD:
+            # Account flagged but fine on hold - no payment required yet
+            conn.execute(
+                "UPDATE verifications SET suspended = 1, suspended_reason = 'Flagged for asking money (fine on hold)', flagged_count = flagged_count + 1, fine_owed = 0 WHERE user_id = ?",
+                (flagged_user_id,)
+            )
+        else:
+            conn.execute(
+                "UPDATE verifications SET suspended = 1, suspended_reason = 'Flagged for asking money', flagged_count = flagged_count + 1, fine_owed = fine_owed + ? WHERE user_id = ?",
+                (total_fine, flagged_user_id)
+            )
     return {
-        "status": "ok", "flag_id": flag_id, "fine_owed": total_fine,
+        "status": "ok", "flag_id": flag_id,
+        "fine_owed": 0 if FINE_ON_HOLD else total_fine,
+        "fine_on_hold": FINE_ON_HOLD,
+        "hold_reason": FINE_HOLD_REASON if FINE_ON_HOLD else None,
         "founder_portion": MONEY_ASKING_FINE, "victim_portion": VICTIM_FINE,
         "victim_id": victim_id, "victim_username": victim_username
     }
@@ -268,7 +290,50 @@ def get_fine_status(user_id):
         return {"fine_owed": 0, "fine_paid": 0, "flagged_count": 0, "suspended": False}
     return {
         "fine_owed": row[0], "fine_paid": row[1],
-        "flagged_count": row[2], "suspended": bool(row[3])
+        "flagged_count": row[2], "suspended": bool(row[3]),
+        "fine_on_hold": FINE_ON_HOLD,
+        "hold_reason": FINE_HOLD_REASON if FINE_ON_HOLD else None
+    }
+
+def activate_fine_system():
+    """Activate the fine system once INC stablecoin is deployed.
+    This should be called after:
+    1. INC stablecoin created and deployed on-chain
+    2. INC added to Soulmate OS platform
+    3. Aceline becomes an OS
+    4. All Incentives Inc. products integrated
+    5. Incentives Inc. AI company corporation international entity formed
+    """
+    global FINE_ON_HOLD
+    FINE_ON_HOLD = False
+    # Apply pending fines to flagged accounts
+    with sqlite3.connect(str(DB_PATH)) as conn:
+        flagged = conn.execute(
+            "SELECT flagged_user_id FROM money_flags WHERE status = 'pending'"
+        ).fetchall()
+        for row in flagged:
+            user_id = row[0]
+            conn.execute(
+                "UPDATE verifications SET fine_owed = ?, suspended_reason = 'Flagged for asking money - fine due' WHERE user_id = ? AND suspended = 1",
+                (TOTAL_FINE, user_id)
+            )
+    return {"status": "ok", "fine_system": "active", "reactivated_fines": len(flagged)}
+
+def get_fine_system_status():
+    return {
+        "fine_on_hold": FINE_ON_HOLD,
+        "hold_reason": FINE_HOLD_REASON if FINE_ON_HOLD else None,
+        "fine_amount": TOTAL_FINE,
+        "founder_portion": MONEY_ASKING_FINE,
+        "victim_portion": VICTIM_FINE,
+        "founder_email": FOUNDER_EMAIL,
+        "conditions_for_activation": [
+            "INC stablecoin created and deployed on-chain",
+            "INC added to Soulmate OS platform",
+            "Aceline becomes an OS",
+            "All Incentives Inc. company products integrated",
+            "Incentives Inc. AI company corporation international entity formed"
+        ]
     }
 
 init_db()

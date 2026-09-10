@@ -1350,18 +1350,36 @@ function showSuspendedFine(fineStatus) {
   document.getElementById('verifyTitle').textContent = 'Account on Hold';
   document.getElementById('verifySubtitle').textContent = 'Fine payment required';
   document.getElementById('verifyStep').textContent = '';
-  document.getElementById('verifyContent').innerHTML = `
-    <div class="verify-suspended">
-      <div class="verify-suspended-title">Flagged for Asking Money</div>
-      <div class="verify-suspended-reason">You were caught asking for money. Pay the fine to restore access.</div>
-      <div class="verify-fine-amount">${fineStatus.fine_owed} INC</div>
-      <div style="font-size:11px; color:var(--muted); margin-top:8px;">
-        25 INC to founder (hawpetossjustin25@gmail.com)<br>
-        25 INC to the person you asked
+  if (fineStatus.fine_on_hold || fineStatus.fine_owed === 0) {
+    document.getElementById('verifyContent').innerHTML = `
+      <div class="verify-suspended">
+        <div class="verify-suspended-title">Flagged for Asking Money</div>
+        <div class="verify-suspended-reason">You were caught asking for money.</div>
+        <div style="font-size:11px; color:#FFD700; margin-top:8px;">
+          FINE SYSTEM ON HOLD
+        </div>
+        <div style="font-size:10px; color:var(--muted); margin-top:6px;">
+          Fines will be activated once INC stablecoin is deployed
+          to Soulmate OS and Aceline OS, and Incentives Inc.
+          AI company corporation international entity is formed.
+        </div>
       </div>
-    </div>
-    <button class="verify-btn" onclick="payFine(${fineStatus.fine_owed})">Pay ${fineStatus.fine_owed} INC Fine</button>
-  `;
+      <button class="verify-btn" onclick="reactivateAccount()">Acknowledge & Continue</button>
+    `;
+  } else {
+    document.getElementById('verifyContent').innerHTML = `
+      <div class="verify-suspended">
+        <div class="verify-suspended-title">Flagged for Asking Money</div>
+        <div class="verify-suspended-reason">You were caught asking for money. Pay the fine to restore access.</div>
+        <div class="verify-fine-amount">${fineStatus.fine_owed} INC</div>
+        <div style="font-size:11px; color:var(--muted); margin-top:8px;">
+          25 INC to founder (hawpetossjustin25@gmail.com)<br>
+          25 INC to the person you asked
+        </div>
+      </div>
+      <button class="verify-btn" onclick="payFine(${fineStatus.fine_owed})">Pay ${fineStatus.fine_owed} INC Fine</button>
+    `;
+  }
   document.getElementById('verifyOverlay').classList.add('show');
 }
 

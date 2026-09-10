@@ -261,6 +261,20 @@ Based on the Wakkii Links walkie-talki system from Soulmate OS. Full WebRTC P2P 
 - After fine payment, account is **restored to full platform access**
 - Multiple flags increase scrutiny
 
+### Fine System Status: ON HOLD
+The fine collection system is currently **ON HOLD**. Accounts are still flagged and suspended for asking money, but no payment is required until the fine system is activated.
+
+**The fine system will be activated once ALL of the following are complete:**
+1. **INC stablecoin** created and deployed on-chain
+2. **INC added to Soulmate OS** platform
+3. **Aceline becomes an OS** (programmed as operating system)
+4. **All Incentives Inc. company products** integrated into the ecosystem
+5. **Incentives Inc. AI company corporation** international entity formed
+
+Once all conditions are met, call `POST /verify/activate_fines` to activate the fine system. All pending flagged accounts will then have their fines applied (50 INC each).
+
+Until then, flagged accounts are acknowledged but no payment is collected.
+
 ### How Verification Works:
 1. User logs in → verification status checked
 2. If not verified → verification flow starts (3 steps)

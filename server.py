@@ -642,6 +642,16 @@ def verify_fine_status(user_id):
     from verification import get_fine_status
     return jsonify(get_fine_status(user_id))
 
+@app.route("/verify/fine_system_status")
+def verify_fine_system_status():
+    from verification import get_fine_system_status
+    return jsonify(get_fine_system_status())
+
+@app.route("/verify/activate_fines", methods=["POST"])
+def verify_activate_fines():
+    from verification import activate_fine_system
+    return jsonify(activate_fine_system())
+
 @app.route("/")
 def serve_ui():
     return send_file(os.path.join("ui", "index.html"))
