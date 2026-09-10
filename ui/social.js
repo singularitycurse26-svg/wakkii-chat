@@ -202,6 +202,85 @@ const Social = {
 
   async getMyCommunityMessages() {
     return this.api(`/community/my_messages/${this.userId}`);
+  },
+
+  // --- Social Media ---
+
+  async createPost(text, mediaType, mediaData, mediaUrl, walkieRoomId, isLive, livePlatform, liveUrl) {
+    return this.api('/media/post', 'POST', {
+      user_id: this.userId, username: this.username, display_name: this.username,
+      text, media_type: mediaType, media_data: mediaData, media_url: mediaUrl,
+      walkie_room_id: walkieRoomId, is_live: isLive, live_platform: livePlatform, live_url: liveUrl
+    });
+  },
+
+  async getFeed(followingOnly = false) {
+    return this.api(`/media/feed?user_id=${this.userId}&following_only=${followingOnly}`);
+  },
+
+  async getUserPosts(userId) {
+    return this.api(`/media/user/${userId}`);
+  },
+
+  async likePost(postId) {
+    return this.api('/media/like', 'POST', { post_id: postId, user_id: this.userId });
+  },
+
+  async unlikePost(postId) {
+    return this.api('/media/unlike', 'POST', { post_id: postId, user_id: this.userId });
+  },
+
+  async addComment(postId, text) {
+    return this.api('/media/comment', 'POST', {
+      post_id: postId, user_id: this.userId, username: this.username, text
+    });
+  },
+
+  async getComments(postId) {
+    return this.api(`/media/comments/${postId}`);
+  },
+
+  async deletePost(postId) {
+    return this.api(`/media/delete/${postId}`, 'POST', { user_id: this.userId });
+  },
+
+  // --- Stream On-Ramps ---
+
+  async setYouTubeOnRamp(rtmpKey, channelId) {
+    return this.api('/media/onramp/youtube', 'POST', {
+      user_id: this.userId, rtmp_key: rtmpKey, channel_id: channelId
+    });
+  },
+
+  async setFacebookOnRamp(accessToken, pageId) {
+    return this.api('/media/onramp/facebook', 'POST', {
+      user_id: this.userId, access_token: accessToken, page_id: pageId
+    });
+  },
+
+  async setWakkiiOnRamp(handle) {
+    return this.api('/media/onramp/wakkii', 'POST', {
+      user_id: this.userId, handle
+    });
+  },
+
+  async getStreamKeys() {
+    return this.api(`/media/keys/${this.userId}`);
+  },
+
+  async startStream(title, platform, rtmpUrl, streamKey, walkieRoomId) {
+    return this.api('/media/stream/start', 'POST', {
+      user_id: this.userId, username: this.username, title,
+      platform, rtmp_url: rtmpUrl, stream_key: streamKey, walkie_room_id: walkieRoomId
+    });
+  },
+
+  async endStream(streamId) {
+    return this.api('/media/stream/end', 'POST', { stream_id: streamId });
+  },
+
+  async getActiveStreams() {
+    return this.api('/media/streams/active');
   }
 };
 

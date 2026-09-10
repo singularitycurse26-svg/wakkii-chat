@@ -179,6 +179,18 @@ MCP tools:
 - Messages expire after 24 hours
 - View/call counts tracked
 
+### Social Media + Live Streaming
+- 🌐 Social → 📱 Media
+- Post text/media posts to your feed
+- Like, comment, share posts
+- Go Live on YouTube + Facebook (RTMP)
+- Live stream posts include walkie room for voice
+- **YouTube On-Ramp** — connect your YouTube stream key
+- **Facebook On-Ramp** — connect your Facebook access token
+- **Wakkii Social On-Ramp** — set your Wakkii handle
+- Live streams auto-create a walkie room for voice
+- Feed shows all posts with live indicators
+
 ## Walkie-Talki — Voice Rooms (Wakkii Links)
 
 Based on the Wakkii Links walkie-talki system from Soulmate OS. Full WebRTC P2P voice rooms.

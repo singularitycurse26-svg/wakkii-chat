@@ -607,7 +607,13 @@ class AcelineFaceTime {
     this.videoCalls = walkie.videoCalls;
     this.videoElements = walkie.videoElements;
 
-    // Intercept incoming calls for FaceTime
+    // Always use walkie-talki audio stream (unified voice)
+    // FaceTime adds video on top of walkie-talki audio, never replaces it
+    if (walkie.stream) {
+      this.localStream = walkie.stream;
+      this.usesWalkieAudio = true;
+    }
+
     const origCallHandler = this.peer.listeners('call');
     this.peer.removeAllListeners('call');
     this.peer.on('call', (call) => this.handleIncomingCall(call));
@@ -615,14 +621,29 @@ class AcelineFaceTime {
 
   async startVideoCall(targetPeerId) {
     if (!this.peer) { this.notifyError('Not connected to room'); return; }
+
+    // Always use walkie-talki audio. Add video track on top.
     if (!this.localStream) {
       try {
         this.localStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: { echoCancellation: true, noiseSuppression: true }
         });
+        this.usesWalkieAudio = false;
       } catch (e) {
         this.notifyError('Camera/mic access denied: ' + e.message);
+        return;
+      }
+    } else if (this.usesWalkieAudio && this.localStream.getVideoTracks().length === 0) {
+      // Walkie audio exists, add video track on top
+      try {
+        const videoStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+        videoStream.getVideoTracks().forEach(t => this.localStream.addTrack(t));
+      } catch (e) {
+        this.notifyError('Camera access denied: ' + e.message);
         return;
       }
     }

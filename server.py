@@ -474,6 +474,115 @@ def community_my_msgs(user_id):
     from community import get_user_messages
     return jsonify({"messages": get_user_messages(user_id)})
 
+# --- Social Media: Posts, Feed, Likes, Comments, Live Streaming ---
+
+@app.route("/media/post", methods=["POST"])
+def media_post():
+    from media import create_post
+    body = request.json or {}
+    return jsonify(create_post(
+        body.get("user_id",""), body.get("username",""), body.get("display_name",""),
+        body.get("text",""), body.get("media_type"), body.get("media_data"),
+        body.get("media_url"), body.get("walkie_room_id"),
+        body.get("is_live",False), body.get("live_platform"), body.get("live_url")
+    ))
+
+@app.route("/media/feed")
+def media_feed():
+    from media import get_feed
+    user_id = request.args.get("user_id")
+    following = request.args.get("following_only") == "true"
+    limit = int(request.args.get("limit", 50))
+    offset = int(request.args.get("offset", 0))
+    return jsonify({"posts": get_feed(user_id, limit, offset, following)})
+
+@app.route("/media/user/<user_id>")
+def media_user_posts(user_id):
+    from media import get_user_posts
+    return jsonify({"posts": get_user_posts(user_id)})
+
+@app.route("/media/post/<post_id>")
+def media_get_post(post_id):
+    from media import get_post
+    return jsonify(get_post(post_id) or {"status": "error", "detail": "Not found"})
+
+@app.route("/media/delete/<post_id>", methods=["POST"])
+def media_delete(post_id):
+    from media import delete_post
+    body = request.json or {}
+    return jsonify(delete_post(post_id, body.get("user_id","")))
+
+@app.route("/media/like", methods=["POST"])
+def media_like():
+    from media import like_post
+    body = request.json or {}
+    return jsonify(like_post(body.get("post_id",""), body.get("user_id","")))
+
+@app.route("/media/unlike", methods=["POST"])
+def media_unlike():
+    from media import unlike_post
+    body = request.json or {}
+    return jsonify(unlike_post(body.get("post_id",""), body.get("user_id","")))
+
+@app.route("/media/comment", methods=["POST"])
+def media_comment():
+    from media import add_comment
+    body = request.json or {}
+    return jsonify(add_comment(body.get("post_id",""), body.get("user_id",""), body.get("username",""), body.get("text","")))
+
+@app.route("/media/comments/<post_id>")
+def media_get_comments(post_id):
+    from media import get_comments
+    return jsonify({"comments": get_comments(post_id)})
+
+# --- Stream On-Ramps ---
+
+@app.route("/media/onramp/youtube", methods=["POST"])
+def media_onramp_youtube():
+    from media import set_youtube_rtmp
+    body = request.json or {}
+    return jsonify(set_youtube_rtmp(body.get("user_id",""), body.get("rtmp_key",""), body.get("channel_id")))
+
+@app.route("/media/onramp/facebook", methods=["POST"])
+def media_onramp_facebook():
+    from media import set_facebook_token
+    body = request.json or {}
+    return jsonify(set_facebook_token(body.get("user_id",""), body.get("access_token",""), body.get("page_id")))
+
+@app.route("/media/onramp/wakkii", methods=["POST"])
+def media_onramp_wakkii():
+    from media import set_wakkii_handle
+    body = request.json or {}
+    return jsonify(set_wakkii_handle(body.get("user_id",""), body.get("handle","")))
+
+@app.route("/media/keys/<user_id>")
+def media_get_keys(user_id):
+    from media import get_stream_keys
+    return jsonify(get_stream_keys(user_id))
+
+# --- Live Streams ---
+
+@app.route("/media/stream/start", methods=["POST"])
+def media_stream_start():
+    from media import start_stream
+    body = request.json or {}
+    return jsonify(start_stream(
+        body.get("user_id",""), body.get("username",""), body.get("title",""),
+        body.get("platform",""), body.get("rtmp_url",""), body.get("stream_key",""),
+        body.get("walkie_room_id")
+    ))
+
+@app.route("/media/stream/end", methods=["POST"])
+def media_stream_end():
+    from media import end_stream
+    body = request.json or {}
+    return jsonify(end_stream(body.get("stream_id","")))
+
+@app.route("/media/streams/active")
+def media_streams_active():
+    from media import get_active_streams
+    return jsonify({"streams": get_active_streams()})
+
 @app.route("/")
 def serve_ui():
     return send_file(os.path.join("ui", "index.html"))

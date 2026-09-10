@@ -783,12 +783,13 @@ body {
     <span class="walkie-close" onclick="toggleSocial()">✕</span>
   </div>
   <div class="walkie-body">
-    <div style="display:flex; gap:4px; margin-bottom:16px;">
+    <div style="display:flex; gap:4px; margin-bottom:16px; flex-wrap:wrap;">
       <button class="walkie-ctrl-btn active" onclick="socialTab('live')" id="socialTabLive">🔴 Live</button>
       <button class="walkie-ctrl-btn" onclick="socialTab('messages')" id="socialTabMsgs">💬 Messages</button>
       <button class="walkie-ctrl-btn" onclick="socialTab('contacts')" id="socialTabContacts">👥 Contacts</button>
       <button class="walkie-ctrl-btn" onclick="socialTab('pay')" id="socialTabPay">💰 Pay</button>
       <button class="walkie-ctrl-btn" onclick="socialTab('community')" id="socialTabCommunity">📍 Community</button>
+      <button class="walkie-ctrl-btn" onclick="socialTab('media')" id="socialTabMedia">📱 Media</button>
     </div>
 
     <div id="socialLiveTab">
@@ -872,6 +873,22 @@ body {
 
       <div style="font-size:12px; color:var(--muted); margin:16px 0 8px;">Community Messages:</div>
       <div id="communityMsgList"></div>
+    </div>
+
+    <!-- Media Tab (Social Media + Live Streaming) -->
+    <div id="socialMediaTab" style="display:none;">
+      <button class="walkie-start-btn" style="background:linear-gradient(135deg,#E91E63,#9C27B0);" onclick="mediaNewPost()">📝 New Post</button>
+      <button class="walkie-start-btn" style="background:linear-gradient(135deg,#FF0000,#CC0000); margin-top:8px;" onclick="mediaGoLiveStream()">📺 Go Live (YouTube/FB)</button>
+
+      <div style="margin:16px 0;">
+        <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">On-Ramps (Connect Accounts):</div>
+        <button class="walkie-ctrl-btn" onclick="mediaOnRampYouTube()" style="width:100%; margin-bottom:6px; background:#FF0000; color:white;">YouTube On-Ramp</button>
+        <button class="walkie-ctrl-btn" onclick="mediaOnRampFacebook()" style="width:100%; margin-bottom:6px; background:#1877F2; color:white;">Facebook On-Ramp</button>
+        <button class="walkie-ctrl-btn" onclick="mediaOnRampWakkii()" style="width:100%; background:var(--accent); color:white;">Wakkii Social On-Ramp</button>
+      </div>
+
+      <div style="font-size:12px; color:var(--muted); margin:16px 0 8px;">Feed:</div>
+      <div id="mediaFeed"></div>
     </div>
   </div>
 </div>
@@ -1700,7 +1717,7 @@ function toggleSocial() {
 }
 
 function socialTab(tab) {
-  ['Live', 'Msgs', 'Contacts', 'Pay', 'Community'].forEach(t => {
+  ['Live', 'Msgs', 'Contacts', 'Pay', 'Community', 'Media'].forEach(t => {
     document.getElementById('socialTab' + t).classList.remove('active');
     const el = document.getElementById('social' + t + 'Tab');
     if (el) el.style.display = 'none';
@@ -1714,6 +1731,7 @@ function socialTab(tab) {
   if (tab === 'contacts') socialRefreshContacts();
   if (tab === 'pay') socialRefreshTxHistory();
   if (tab === 'community') { communityAutoDetect(); communitySearch(); }
+  if (tab === 'media') mediaRefreshFeed();
 }
 
 // --- Live ---
@@ -2148,6 +2166,186 @@ async function communityCallFree(msgId, roomId) {
   document.getElementById('walkieJoinCode').value = roomId;
   walkieJoinRoom();
   alert('Connecting you for free via walkie-talki...');
+}
+
+// --- Social Media ---
+async function mediaRefreshFeed() {
+  if (!window.Social) return;
+  const result = await Social.getFeed(false);
+  const list = document.getElementById('mediaFeed');
+  if (!result.posts || result.posts.length === 0) {
+    list.innerHTML = '<div style="color:var(--muted); font-size:12px; text-align:center; padding:20px;">No posts yet. Be the first to post!</div>';
+    return;
+  }
+  list.innerHTML = result.posts.map(p => `
+    <div style="background:var(--bg); border-radius:12px; padding:12px; margin-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+        <div class="walkie-participant-avatar" style="width:28px; height:28px; font-size:12px;">${(p.display_name || p.username || '?').charAt(0).toUpperCase()}</div>
+        <div>
+          <div style="font-size:13px; font-weight:600;">${p.display_name || p.username || 'Unknown'}</div>
+          <div style="font-size:10px; color:var(--muted);">@${p.username || 'unknown'}</div>
+        </div>
+        ${p.is_live ? '<span style="color:#f44336; font-size:10px; font-weight:600; margin-left:auto;">LIVE</span>' : ''}
+      </div>
+      <div style="font-size:13px; margin-bottom:8px;">${p.text}</div>
+      ${p.media_url ? `<div style="margin-bottom:8px;"><a href="${p.media_url}" target="_blank" style="color:var(--accent); font-size:12px;">View Media</a></div>` : ''}
+      ${p.is_live && p.live_url ? `<div style="margin-bottom:8px;"><a href="${p.live_url}" target="_blank" style="color:#f44336; font-size:12px;">Watch on ${p.live_platform}</a></div>` : ''}
+      ${p.walkie_room_id ? `<button class="walkie-ctrl-btn" style="font-size:11px; padding:4px 10px;" onclick="mediaJoinRoom('${p.walkie_room_id}')">Join Voice Room</button>` : ''}
+      <div style="display:flex; gap:12px; margin-top:8px; font-size:11px; color:var(--muted);">
+        <span style="cursor:pointer;" onclick="mediaLike('${p.id}', this)">Heart ${p.likes_count || 0}</span>
+        <span style="cursor:pointer;" onclick="mediaShowComments('${p.id}')">Comments ${p.comments_count || 0}</span>
+        <span>Shares ${p.shares_count || 0}</span>
+      </div>
+      <div id="mediaComments-${p.id}" style="display:none; margin-top:8px;"></div>
+    </div>
+  `).join('');
+}
+
+async function mediaNewPost() {
+  const text = prompt("What's on your mind?");
+  if (!text) return;
+
+  let walkieRoomId = null;
+  if (walkie && walkie.roomId) walkieRoomId = walkie.roomId;
+
+  const result = await Social.createPost(text, null, null, null, walkieRoomId, false, null, null);
+  if (result.status === 'ok') {
+    mediaRefreshFeed();
+  } else {
+    alert('Error posting');
+  }
+}
+
+async function mediaGoLiveStream() {
+  const title = prompt('Live stream title:', USER_NAME + ' Live');
+  if (!title) return;
+
+  const keys = await Social.getStreamKeys();
+  let platform = '';
+  let rtmpUrl = '';
+  let streamKey = '';
+
+  if (keys.youtube && keys.youtube.rtmp_key) {
+    platform = 'youtube';
+    rtmpUrl = 'rtmp://a.rtmp.youtube.com/live2';
+    streamKey = keys.youtube.rtmp_key;
+  } else if (keys.facebook && keys.facebook.access_token) {
+    platform = 'facebook';
+    rtmpUrl = 'rtmps://live-api-s.facebook.com:443/rtmp/';
+    streamKey = keys.facebook.access_token;
+  } else {
+    const choice = prompt('No on-ramp configured. Choose platform (youtube/facebook):', 'youtube');
+    if (!choice) return;
+    platform = choice.toLowerCase();
+    if (platform === 'youtube') {
+      streamKey = prompt('Enter your YouTube stream key:');
+      rtmpUrl = 'rtmp://a.rtmp.youtube.com/live2';
+      if (streamKey) await Social.setYouTubeOnRamp(streamKey, null);
+    } else if (platform === 'facebook') {
+      streamKey = prompt('Enter your Facebook stream key:');
+      rtmpUrl = 'rtmps://live-api-s.facebook.com:443/rtmp/';
+      if (streamKey) await Social.setFacebookOnRamp(streamKey, null);
+    }
+  }
+
+  if (!streamKey) {
+    alert('Stream key required');
+    return;
+  }
+
+  let walkieRoomId = null;
+  if (walkie && walkie.roomId) walkieRoomId = walkie.roomId;
+  if (!walkieRoomId) {
+    toggleWalkie();
+    await walkieCreateRoom();
+    walkieRoomId = walkie.roomId;
+  }
+
+  const result = await Social.startStream(title, platform, rtmpUrl, streamKey, walkieRoomId);
+  if (result.status === 'ok') {
+    const liveUrl = platform === 'youtube' ? 'https://youtube.com/watch' : 'https://facebook.com/live';
+    await Social.createPost(`Going live: ${title}`, null, null, liveUrl, walkieRoomId, true, platform, liveUrl);
+    alert('Live stream started on ' + platform + '!\nRTMP: ' + rtmpUrl + '\nKey: ' + streamKey.slice(0, 8) + '...\nWalkie room: ' + walkieRoomId);
+    mediaRefreshFeed();
+  } else {
+    alert('Error starting stream');
+  }
+}
+
+async function mediaLike(postId, el) {
+  await Social.likePost(postId);
+  mediaRefreshFeed();
+}
+
+async function mediaShowComments(postId) {
+  const container = document.getElementById('mediaComments-' + postId);
+  if (container.style.display === 'block') {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+  const result = await Social.getComments(postId);
+  let html = '';
+  if (result.comments && result.comments.length > 0) {
+    html = result.comments.map(c => `
+      <div style="padding:6px; background:var(--surface); border-radius:6px; margin-bottom:4px; font-size:12px;">
+        <strong>@${c.username}:</strong> ${c.text}
+      </div>
+    `).join('');
+  }
+  html += `
+    <div class="walkie-join-input" style="margin-top:4px;">
+      <input type="text" id="mediaCommentInput-${postId}" placeholder="Comment..." onkeydown="if(event.key==='Enter')mediaAddComment('${postId}')">
+      <button onclick="mediaAddComment('${postId}')">Post</button>
+    </div>
+  `;
+  container.innerHTML = html;
+}
+
+async function mediaAddComment(postId) {
+  const input = document.getElementById('mediaCommentInput-' + postId);
+  const text = input.value.trim();
+  if (!text) return;
+  await Social.addComment(postId, text);
+  mediaShowComments(postId);
+  mediaShowComments(postId);
+}
+
+function mediaJoinRoom(roomId) {
+  toggleWalkie();
+  document.getElementById('walkieJoinCode').value = roomId;
+  walkieJoinRoom();
+}
+
+// --- On-Ramps ---
+
+async function mediaOnRampYouTube() {
+  const rtmpKey = prompt('Enter your YouTube stream key:\n(From YouTube Studio -> Create -> Go Live)');
+  if (!rtmpKey) return;
+  const channelId = prompt('Channel ID (optional):', '');
+  const result = await Social.setYouTubeOnRamp(rtmpKey, channelId);
+  if (result.status === 'ok') {
+    alert('YouTube on-ramp configured! You can now go live on YouTube.');
+  }
+}
+
+async function mediaOnRampFacebook() {
+  const token = prompt('Enter your Facebook access token:\n(From Facebook Developers -> Graph API Explorer)');
+  if (!token) return;
+  const pageId = prompt('Page ID (optional):', '');
+  const result = await Social.setFacebookOnRamp(token, pageId);
+  if (result.status === 'ok') {
+    alert('Facebook on-ramp configured! You can now go live on Facebook.');
+  }
+}
+
+async function mediaOnRampWakkii() {
+  const handle = prompt('Enter your Wakkii Social handle:', '@' + (USER_NAME || 'user'));
+  if (!handle) return;
+  const result = await Social.setWakkiiOnRamp(handle);
+  if (result.status === 'ok') {
+    alert('Wakkii Social on-ramp configured! Your handle: ' + handle);
+  }
 }
 </script>
 </body>
