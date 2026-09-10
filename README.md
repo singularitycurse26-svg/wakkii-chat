@@ -162,6 +162,23 @@ MCP tools:
 - Real-time development chat
 - Uses /agent endpoint with GLM-5.1
 
+### Multi-Room Voice Linking
+- Link multiple walkie-talki rooms together
+- Audio from one room flows to linked rooms
+- Cross-room communication
+- `walkie.linkRoom(roomId)` / `walkie.unlinkRoom(roomId)`
+
+### Community Voice Messages (City-Based Connections)
+- 🌐 Social → 📍 Community
+- Post voice messages for your city
+- Auto city detection via geolocation (Nominatim reverse geocoding)
+- Search by city, gender, age range
+- Men and women find live connections by city
+- Play community voice messages
+- Call through walkie-talki for FREE from any message
+- Messages expire after 24 hours
+- View/call counts tracked
+
 ## Walkie-Talki — Voice Rooms (Wakkii Links)
 
 Based on the Wakkii Links walkie-talki system from Soulmate OS. Full WebRTC P2P voice rooms.

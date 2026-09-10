@@ -424,6 +424,56 @@ def pay_history(user_id):
     from payments import get_transaction_history
     return jsonify({"transactions": get_transaction_history(user_id)})
 
+# --- Community Voice Messages ---
+
+@app.route("/community/post", methods=["POST"])
+def community_post():
+    from community import post_message
+    body = request.json or {}
+    return jsonify(post_message(
+        body.get("user_id",""), body.get("username",""), body.get("display_name",""),
+        body.get("city",""), body.get("gender"), body.get("age_range"),
+        body.get("state"), body.get("country","US"), body.get("lat"), body.get("lon"),
+        body.get("title",""), body.get("description",""),
+        body.get("audio_data"), body.get("duration",0), body.get("room_id")
+    ))
+
+@app.route("/community/messages")
+def community_messages():
+    from community import get_messages
+    city = request.args.get("city")
+    gender = request.args.get("gender")
+    age_range = request.args.get("age_range")
+    limit = int(request.args.get("limit", 50))
+    offset = int(request.args.get("offset", 0))
+    return jsonify({"messages": get_messages(city, gender, age_range, limit, offset)})
+
+@app.route("/community/message/<msg_id>")
+def community_get_msg(msg_id):
+    from community import get_message
+    return jsonify(get_message(msg_id) or {"status": "error", "detail": "Not found"})
+
+@app.route("/community/call/<msg_id>", methods=["POST"])
+def community_call(msg_id):
+    from community import increment_calls
+    return jsonify(increment_calls(msg_id))
+
+@app.route("/community/delete/<msg_id>", methods=["POST"])
+def community_delete(msg_id):
+    from community import delete_message
+    body = request.json or {}
+    return jsonify(delete_message(msg_id, body.get("user_id","")))
+
+@app.route("/community/cities")
+def community_cities():
+    from community import get_cities
+    return jsonify({"cities": get_cities()})
+
+@app.route("/community/my_messages/<user_id>")
+def community_my_msgs(user_id):
+    from community import get_user_messages
+    return jsonify({"messages": get_user_messages(user_id)})
+
 @app.route("/")
 def serve_ui():
     return send_file(os.path.join("ui", "index.html"))

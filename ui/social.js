@@ -165,6 +165,43 @@ const Social = {
 
   async getTransactionHistory() {
     return this.api(`/payments/history/${this.userId}`);
+  },
+
+  // --- Community Voice Messages ---
+
+  async postCommunityMessage(data) {
+    return this.api('/community/post', 'POST', {
+      user_id: this.userId, username: this.username,
+      display_name: this.username, ...data
+    });
+  },
+
+  async getCommunityMessages(city, gender, ageRange) {
+    let path = '/community/messages?';
+    if (city) path += `city=${encodeURIComponent(city)}&`;
+    if (gender) path += `gender=${encodeURIComponent(gender)}&`;
+    if (ageRange) path += `age_range=${encodeURIComponent(ageRange)}&`;
+    return this.api(path);
+  },
+
+  async getCommunityMessage(msgId) {
+    return this.api(`/community/message/${msgId}`);
+  },
+
+  async communityCall(msgId) {
+    return this.api(`/community/call/${msgId}`, 'POST', {});
+  },
+
+  async deleteCommunityMessage(msgId) {
+    return this.api(`/community/delete/${msgId}`, 'POST', { user_id: this.userId });
+  },
+
+  async getCommunityCities() {
+    return this.api('/community/cities');
+  },
+
+  async getMyCommunityMessages() {
+    return this.api(`/community/my_messages/${this.userId}`);
   }
 };
 

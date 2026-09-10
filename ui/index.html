@@ -788,6 +788,7 @@ body {
       <button class="walkie-ctrl-btn" onclick="socialTab('messages')" id="socialTabMsgs">💬 Messages</button>
       <button class="walkie-ctrl-btn" onclick="socialTab('contacts')" id="socialTabContacts">👥 Contacts</button>
       <button class="walkie-ctrl-btn" onclick="socialTab('pay')" id="socialTabPay">💰 Pay</button>
+      <button class="walkie-ctrl-btn" onclick="socialTab('community')" id="socialTabCommunity">📍 Community</button>
     </div>
 
     <div id="socialLiveTab">
@@ -837,6 +838,40 @@ body {
 
       <div style="font-size:13px; font-weight:600; margin:20px 0 12px;">Transaction History</div>
       <div id="socialTxHistory" style="max-height:200px; overflow-y:auto;"></div>
+    </div>
+
+    <!-- Community Tab -->
+    <div id="socialCommunityTab" style="display:none;">
+      <button class="walkie-start-btn" style="background:linear-gradient(135deg,#FF9800,#F57C00);" onclick="communityRecordMessage()">🎤 Post Voice Message</button>
+
+      <div style="margin:16px 0;">
+        <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">Your City (auto-detected):</div>
+        <input type="text" class="auth-input" id="communityCity" placeholder="Detecting..." style="margin-bottom:8px;">
+        <input type="text" class="auth-input" id="communityState" placeholder="State" style="margin-bottom:8px;">
+        <button class="walkie-ctrl-btn" onclick="communityDetectCity()" style="width:100%;">📍 Detect My Location</button>
+      </div>
+
+      <div style="margin:16px 0;">
+        <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">Search Connections:</div>
+        <select id="communityFilterGender" class="auth-input" style="margin-bottom:8px;">
+          <option value="">All Genders</option>
+          <option value="male">Men</option>
+          <option value="female">Women</option>
+          <option value="other">Other</option>
+        </select>
+        <select id="communityFilterAge" class="auth-input" style="margin-bottom:8px;">
+          <option value="">All Ages</option>
+          <option value="18-25">18-25</option>
+          <option value="26-35">26-35</option>
+          <option value="36-45">36-45</option>
+          <option value="46-55">46-55</option>
+          <option value="55+">55+</option>
+        </select>
+        <button class="walkie-ctrl-btn" onclick="communitySearch()" style="width:100%;">Search Messages</button>
+      </div>
+
+      <div style="font-size:12px; color:var(--muted); margin:16px 0 8px;">Community Messages:</div>
+      <div id="communityMsgList"></div>
     </div>
   </div>
 </div>
@@ -1665,9 +1700,10 @@ function toggleSocial() {
 }
 
 function socialTab(tab) {
-  ['Live', 'Msgs', 'Contacts', 'Pay'].forEach(t => {
+  ['Live', 'Msgs', 'Contacts', 'Pay', 'Community'].forEach(t => {
     document.getElementById('socialTab' + t).classList.remove('active');
-    document.getElementById('social' + t + 'Tab').style.display = 'none';
+    const el = document.getElementById('social' + t + 'Tab');
+    if (el) el.style.display = 'none';
   });
   const cap = tab.charAt(0).toUpperCase() + tab.slice(1);
   document.getElementById('socialTab' + cap).classList.add('active');
@@ -1677,6 +1713,7 @@ function socialTab(tab) {
   if (tab === 'messages') socialRefreshConvs();
   if (tab === 'contacts') socialRefreshContacts();
   if (tab === 'pay') socialRefreshTxHistory();
+  if (tab === 'community') { communityAutoDetect(); communitySearch(); }
 }
 
 // --- Live ---
@@ -1901,7 +1938,6 @@ async function socialRefreshTxHistory() {
 const origFacetimeStartCall = window.facetimeStartCall;
 window.facetimeStartCall = async function() {
   await origFacetimeStartCall();
-  // Auto-add contact when call starts
   if (walkie && Social.userId) {
     const participants = walkie.getParticipants().filter(p => p.peerId !== walkie.peer.id);
     participants.forEach(p => {
@@ -1909,6 +1945,210 @@ window.facetimeStartCall = async function() {
     });
   }
 };
+
+// --- Community Voice Messages ---
+let communityRecorder = null;
+let communityAudioChunks = [];
+let communityStream = null;
+
+function communityDetectCity() {
+  const cityInput = document.getElementById('communityCity');
+  const stateInput = document.getElementById('communityState');
+
+  if (!navigator.geolocation) {
+    cityInput.placeholder = 'Enter city manually';
+    return;
+  }
+
+  cityInput.placeholder = 'Detecting...';
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`)
+        .then(r => r.json())
+        .then(data => {
+          const addr = data.address || {};
+          const city = addr.city || addr.town || addr.village || addr.county || 'Unknown';
+          const state = addr.state || '';
+          cityInput.value = city;
+          stateInput.value = state;
+          localStorage.setItem('aceline_city', city);
+          localStorage.setItem('aceline_state', state);
+          localStorage.setItem('aceline_lat', lat);
+          localStorage.setItem('aceline_lon', lon);
+        })
+        .catch(() => {
+          cityInput.placeholder = 'Enter city manually';
+        });
+    },
+    (err) => {
+      cityInput.placeholder = 'Enter city manually';
+    },
+    { timeout: 10000 }
+  );
+}
+
+function communityAutoDetect() {
+  const savedCity = localStorage.getItem('aceline_city');
+  if (savedCity) {
+    document.getElementById('communityCity').value = savedCity;
+    document.getElementById('communityState').value = localStorage.getItem('aceline_state') || '';
+  } else {
+    communityDetectCity();
+  }
+}
+
+async function communityRecordMessage() {
+  const city = document.getElementById('communityCity').value.trim();
+  if (!city) {
+    alert('Detect or enter your city first');
+    return;
+  }
+
+  try {
+    communityStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    communityAudioChunks = [];
+
+    communityRecorder = new MediaRecorder(communityStream);
+    communityRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) communityAudioChunks.push(e.data);
+    };
+
+    const title = prompt('Title for your message:', 'Looking to connect');
+    const gender = prompt('Your gender (male/female/other):', '');
+    const ageRange = prompt('Your age range (18-25, 26-35, 36-45, 46-55, 55+):', '');
+    const description = prompt('Description (optional):', '');
+
+    if (!title) {
+      communityStream.getTracks().forEach(t => t.stop());
+      return;
+    }
+
+    communityRecorder.start();
+    alert('Recording started. Click OK to stop recording (max 60 seconds).');
+
+    setTimeout(() => {
+      if (communityRecorder && communityRecorder.state !== 'inactive') {
+        communityStopRecording(title, gender, ageRange, description, city);
+      }
+    }, 60000);
+
+    const stopNow = confirm('Click OK to stop recording now, or Cancel to keep recording (auto-stops in 60s)');
+    if (stopNow) {
+      communityStopRecording(title, gender, ageRange, description, city);
+    }
+  } catch (e) {
+    alert('Mic access denied: ' + e.message);
+  }
+}
+
+async function communityStopRecording(title, gender, ageRange, description, city) {
+  if (!communityRecorder) return;
+
+  const state = document.getElementById('communityState').value.trim();
+  const lat = parseFloat(localStorage.getItem('aceline_lat') || '0');
+  const lon = parseFloat(localStorage.getItem('aceline_lon') || '0');
+
+  let audioBase64 = '';
+
+  if (communityAudioChunks.length > 0) {
+    const blob = new Blob(communityAudioChunks, { type: 'audio/webm' });
+    audioBase64 = await blobToBase64(blob);
+  }
+
+  communityRecorder = null;
+  if (communityStream) {
+    communityStream.getTracks().forEach(t => t.stop());
+    communityStream = null;
+  }
+
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let roomId = '';
+  for (let i = 0; i < 6; i++) roomId += chars[Math.floor(Math.random() * chars.length)];
+
+  const result = await Social.postCommunityMessage({
+    city, state, gender, age_range: ageRange,
+    title, description, audio_data: audioBase64,
+    duration: 30, room_id: roomId, lat, lon
+  });
+
+  if (result.status === 'ok') {
+    alert('Message posted! Others can now find you and call for free.');
+    communitySearch();
+  } else {
+    alert('Error: ' + (result.detail || 'Failed to post'));
+  }
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result;
+      resolve(result.split(',')[1] || '');
+    };
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function communitySearch() {
+  const city = document.getElementById('communityCity').value.trim();
+  const gender = document.getElementById('communityFilterGender').value;
+  const ageRange = document.getElementById('communityFilterAge').value;
+
+  const result = await Social.getCommunityMessages(city, gender, ageRange);
+  const list = document.getElementById('communityMsgList');
+
+  if (!result.messages || result.messages.length === 0) {
+    list.innerHTML = '<div style="color:var(--muted); font-size:12px; text-align:center; padding:20px;">No messages found. Be the first to post!</div>';
+    return;
+  }
+
+  list.innerHTML = result.messages.map(m => `
+    <div class="walkie-participant" style="flex-direction:column; align-items:stretch; padding:12px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+        <div class="walkie-participant-avatar" style="background:linear-gradient(135deg,#FF9800,#F57C00);">${(m.display_name || m.username || '?').charAt(0).toUpperCase()}</div>
+        <div class="walkie-participant-info">
+          <div class="walkie-participant-name">${m.title}</div>
+          <div class="walkie-participant-role">@${m.username || 'unknown'} - ${m.gender || ''} ${m.age_range || ''} - ${m.city}, ${m.state || ''}</div>
+        </div>
+      </div>
+      ${m.description ? `<div style="font-size:12px; color:var(--muted); margin-bottom:8px;">${m.description}</div>` : ''}
+      <div style="display:flex; gap:6px;">
+        ${m.audio_data ? `<button class="walkie-ctrl-btn" style="flex:1; font-size:11px;" onclick="communityPlayAudio('${m.id}')">Play</button>` : ''}
+        <button class="walkie-ctrl-btn" style="flex:1; font-size:11px; background:#00e676; color:#0a0a0f;" onclick="communityCallFree('${m.id}', '${m.room_id || ''}')">Call Free</button>
+      </div>
+      <div style="font-size:10px; color:var(--muted); margin-top:6px;">${m.views} views - ${m.calls} calls</div>
+    </div>
+  `).join('');
+}
+
+let communityAudioEl = null;
+async function communityPlayAudio(msgId) {
+  const msg = await Social.getCommunityMessage(msgId);
+  if (!msg || !msg.audio_data) {
+    alert('No audio available');
+    return;
+  }
+  if (communityAudioEl) communityAudioEl.pause();
+  communityAudioEl = new Audio('data:audio/webm;base64,' + msg.audio_data);
+  communityAudioEl.play().catch(e => alert('Could not play: ' + e.message));
+}
+
+async function communityCallFree(msgId, roomId) {
+  await Social.communityCall(msgId);
+  if (!roomId) {
+    alert('No room ID available for this message');
+    return;
+  }
+  toggleWalkie();
+  document.getElementById('walkieJoinCode').value = roomId;
+  walkieJoinRoom();
+  alert('Connecting you for free via walkie-talki...');
+}
 </script>
 </body>
 </html>

@@ -39,6 +39,7 @@ class AcelineWalkieTalki {
     this.onError = null;
     this.onStateChange = null;
     this.onParticipantsChange = null;
+    this.linkedRooms = new Map(); // multi-room linking
   }
 
   generateRoomId() {
@@ -458,6 +459,10 @@ class AcelineWalkieTalki {
     this.videoElements.forEach(v => v.srcObject = null);
     this.videoElements.clear();
 
+    // Leave all linked rooms
+    this.linkedRooms.forEach(r => { try { r.destroy(); } catch {} });
+    this.linkedRooms.clear();
+
     if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; }
     if (this.videoStream) { this.videoStream.getTracks().forEach(t => t.stop()); this.videoStream = null; }
     if (this.peer) { try { this.peer.destroy(); } catch {} this.peer = null; }
@@ -472,6 +477,68 @@ class AcelineWalkieTalki {
     this.videoEnabled = false;
     this.notifyStateChange();
     this.notifyParticipantsChange();
+  }
+
+  // --- Multi-room linking ---
+  // Link multiple rooms together so audio from one flows to others
+
+  linkRoom(roomId) {
+    if (!this.peer || roomId === this.roomId) return;
+    if (this.linkedRooms.has(roomId)) return;
+
+    const linkedPeerId = `${PEER_PREFIX}${roomId}-link-${Math.random().toString(36).slice(2, 6)}`;
+    const linkedPeer = new Peer(linkedPeerId, { debug: 1 });
+
+    linkedPeer.on('open', () => {
+      const hostPeerId = `${PEER_PREFIX}${roomId}`;
+      const conn = linkedPeer.connect(hostPeerId, {
+        metadata: { name: this.userName + ' (linked)', role: 'listener', isHost: false, linked: true }
+      });
+
+      conn.on('open', () => {
+        conn.send({ type: 'hello', name: this.userName + ' (linked)', role: 'listener', isHost: false });
+        if (this.stream) {
+          const call = linkedPeer.call(hostPeerId, this.stream, {
+            metadata: { name: this.userName + ' (linked)', role: 'listener', linked: true }
+          });
+          if (call) {
+            call.on('stream', (remote) => {
+              let audio = this.audioElements.get('link-' + roomId);
+              if (!audio) {
+                audio = new Audio();
+                audio.autoplay = true;
+                this.audioElements.set('link-' + roomId, audio);
+              }
+              audio.srcObject = remote;
+              audio.play().catch(() => {});
+            });
+          }
+        }
+      });
+
+      conn.on('data', (data) => this.handleDataMessage(data, 'link-' + roomId));
+    });
+
+    linkedPeer.on('call', (call) => {
+      if (this.stream) call.answer(this.stream);
+      else call.close();
+    });
+
+    this.linkedRooms.set(roomId, linkedPeer);
+    this.notifyStateChange();
+  }
+
+  unlinkRoom(roomId) {
+    const peer = this.linkedRooms.get(roomId);
+    if (peer) { try { peer.destroy(); } catch {} }
+    this.linkedRooms.delete(roomId);
+    const audio = this.audioElements.get('link-' + roomId);
+    if (audio) { audio.srcObject = null; this.audioElements.delete('link-' + roomId); }
+    this.notifyStateChange();
+  }
+
+  getLinkedRooms() {
+    return Array.from(this.linkedRooms.keys());
   }
 
   getParticipants() {
