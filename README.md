@@ -235,6 +235,19 @@ MCP tools:
 - Live streams auto-create a walkie room for voice
 - Feed shows all posts with live indicators
 
+### Blind Date (Voice-Only Worldwide)
+- 🌐 Social → 💘 Blind Date
+- Opt in to blind date section
+- Get matched with another user worldwide (random)
+- Voice-only interaction via walkie-talki (no video, no profiles)
+- Get to know each other through voice conversation
+- After conversation, choose:
+  - **Keep Talking** — saves as Blind Date contact (if both agree)
+  - **Reveal Identity** — show profiles to each other
+  - **Move On** — end and find a new match
+- Save up to **5 blind date contacts** (slots 1-5)
+- Anonymous until both choose to reveal
+
 ## Walkie-Talki — Voice Rooms (Wakkii Links)
 
 Based on the Wakkii Links walkie-talki system from Soulmate OS. Full WebRTC P2P voice rooms.

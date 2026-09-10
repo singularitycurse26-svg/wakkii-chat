@@ -862,6 +862,7 @@ body {
       <button class="walkie-ctrl-btn" onclick="socialTab('pay')" id="socialTabPay">💰 Pay</button>
       <button class="walkie-ctrl-btn" onclick="socialTab('community')" id="socialTabCommunity">📍 Community</button>
       <button class="walkie-ctrl-btn" onclick="socialTab('media')" id="socialTabMedia">📱 Media</button>
+      <button class="walkie-ctrl-btn" onclick="socialTab('blinddate')" id="socialTabBlindDate">💘 Blind Date</button>
     </div>
 
     <div id="socialLiveTab">
@@ -961,6 +962,54 @@ body {
 
       <div style="font-size:12px; color:var(--muted); margin:16px 0 8px;">Feed:</div>
       <div id="mediaFeed"></div>
+    </div>
+
+    <!-- Blind Date Tab -->
+    <div id="socialBlindDateTab" style="display:none;">
+      <div id="bdOptInSection">
+        <div style="font-size:14px; font-weight:600; margin-bottom:8px; text-align:center;">Voice Blind Dating</div>
+        <div style="font-size:12px; color:var(--muted); text-align:center; margin-bottom:16px;">
+          Get matched with someone worldwide. Talk via voice only - no profiles, no photos.
+          After each conversation: keep talking or move on. Save up to 5 blind date contacts.
+        </div>
+        <button class="walkie-start-btn" style="background:linear-gradient(135deg,#E91E63,#F06292);" onclick="bdOptInFlow()">Opt In to Blind Date</button>
+      </div>
+
+      <div id="bdMatchingSection" style="display:none;">
+        <div style="font-size:14px; font-weight:600; margin-bottom:8px; text-align:center;">You're Opted In</div>
+        <div style="font-size:12px; color:var(--muted); text-align:center; margin-bottom:16px;">
+          Looking for your blind date match...
+        </div>
+        <button class="walkie-start-btn" style="background:linear-gradient(135deg,#E91E63,#F06292);" onclick="bdFindMatch()">Find a Blind Date</button>
+        <button class="walkie-ctrl-btn" style="width:100%; margin-top:8px;" onclick="bdOptOut()">Leave Blind Date</button>
+      </div>
+
+      <div id="bdActiveMatch" style="display:none;">
+        <div style="font-size:14px; font-weight:600; margin-bottom:8px; text-align:center;">Blind Date Active</div>
+        <div style="font-size:12px; color:var(--muted); text-align:center; margin-bottom:12px;">
+          You're talking to your blind date. Voice only - get to know each other!
+        </div>
+        <div id="bdMatchInfo" style="background:var(--bg); border-radius:12px; padding:12px; margin-bottom:12px; text-align:center;">
+          <div style="font-size:13px; font-weight:600;">Blind Date</div>
+          <div style="font-size:11px; color:var(--muted);">Room: <span id="bdRoomId">--</span></div>
+        </div>
+        <button class="walkie-ctrl-btn" style="width:100%; background:#00e676; color:#0a0a0f; margin-bottom:6px;" onclick="bdJoinRoom()">Join Voice Room</button>
+        <button class="walkie-ctrl-btn" style="width:100%; margin-bottom:6px;" onclick="bdChoice('keep_talking')">Keep Talking</button>
+        <button class="walkie-ctrl-btn" style="width:100%; margin-bottom:6px;" onclick="bdChoice('reveal')">Reveal Identity</button>
+        <button class="walkie-ctrl-btn" style="width:100%; background:#f44336; color:white;" onclick="bdChoice('move_on')">Move On</button>
+      </div>
+
+      <div id="bdWaitingSection" style="display:none;">
+        <div style="font-size:14px; font-weight:600; text-align:center; margin-bottom:8px;">Waiting...</div>
+        <div style="font-size:12px; color:var(--muted); text-align:center;" id="bdWaitMsg">
+          Waiting for your blind date to choose...
+        </div>
+      </div>
+
+      <div id="bdContactsSection" style="margin-top:20px;">
+        <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Saved Blind Dates (up to 5)</div>
+        <div id="bdContactsList"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -2084,7 +2133,7 @@ function toggleSocial() {
 }
 
 function socialTab(tab) {
-  ['Live', 'Msgs', 'Contacts', 'Pay', 'Community', 'Media'].forEach(t => {
+  ['Live', 'Msgs', 'Contacts', 'Pay', 'Community', 'Media', 'BlindDate'].forEach(t => {
     document.getElementById('socialTab' + t).classList.remove('active');
     const el = document.getElementById('social' + t + 'Tab');
     if (el) el.style.display = 'none';
@@ -2099,6 +2148,7 @@ function socialTab(tab) {
   if (tab === 'pay') socialRefreshTxHistory();
   if (tab === 'community') { communityAutoDetect(); communitySearch(); }
   if (tab === 'media') mediaRefreshFeed();
+  if (tab === 'blinddate') bdRefresh();
 }
 
 // --- Live ---
@@ -2717,6 +2767,159 @@ async function mediaOnRampWakkii() {
   if (result.status === 'ok') {
     alert('Wakkii Social on-ramp configured! Your handle: ' + handle);
   }
+}
+
+// --- Blind Date ---
+let bdCurrentMatchId = null;
+let bdCurrentRoomId = null;
+let bdPollInterval = null;
+
+async function bdRefresh() {
+  if (!window.Social) return;
+  const active = await Social.bdGetActive();
+  const contacts = await Social.bdGetContacts();
+
+  // Show/hide sections
+  if (active.status === 'active') {
+    bdCurrentMatchId = active.match_id;
+    bdCurrentRoomId = active.room_id;
+    document.getElementById('bdOptInSection').style.display = 'none';
+    document.getElementById('bdMatchingSection').style.display = 'none';
+    document.getElementById('bdActiveMatch').style.display = 'block';
+    document.getElementById('bdWaitingSection').style.display = 'none';
+    document.getElementById('bdRoomId').textContent = active.room_id || '--';
+  } else {
+    document.getElementById('bdActiveMatch').style.display = 'none';
+    document.getElementById('bdMatchingSection').style.display = 'block';
+    document.getElementById('bdOptInSection').style.display = 'none';
+  }
+
+  // Render contacts
+  const list = document.getElementById('bdContactsList');
+  if (contacts.contacts && contacts.contacts.length > 0) {
+    list.innerHTML = contacts.contacts.map(c => `
+      <div class="walkie-participant" style="padding:10px; margin-bottom:6px;">
+        <div class="walkie-participant-info">
+          <div class="walkie-participant-name">Blind Date #${c.slot}</div>
+          <div class="walkie-participant-role">Saved ${new Date(c.created_at * 1000).toLocaleDateString()}</div>
+        </div>
+        <button class="walkie-ctrl-btn" style="font-size:11px; padding:4px 10px; background:#f44336; color:white;" onclick="bdDeleteContact('${c.id}')">Remove</button>
+      </div>
+    `).join('');
+  } else {
+    list.innerHTML = '<div style="color:var(--muted); font-size:12px; text-align:center; padding:12px;">No saved blind dates yet</div>';
+  }
+}
+
+async function bdOptInFlow() {
+  const gender = prompt('Your gender (male/female/other):', '');
+  const ageRange = prompt('Your age range (18-25, 26-35, 36-45, 46-55, 55+):', '');
+  const city = localStorage.getItem('aceline_city') || prompt('Your city:', '');
+  const country = prompt('Your country:', 'US');
+
+  const result = await Social.bdOptIn(gender, ageRange, city, country);
+  if (result.status === 'ok') {
+    alert('You\'re opted in! Click "Find a Blind Date" to get matched.');
+    bdRefresh();
+  } else {
+    alert('Error: ' + (result.detail || 'Could not opt in'));
+  }
+}
+
+async function bdOptOut() {
+  const result = await Social.bdOptOut();
+  if (result.status === 'ok') {
+    alert('You\'ve left blind date.');
+    bdRefresh();
+  }
+}
+
+async function bdFindMatch() {
+  const result = await Social.bdFindMatch();
+  if (result.status === 'matched') {
+    bdCurrentMatchId = result.match_id;
+    bdCurrentRoomId = result.room_id;
+    alert('Matched! Join the voice room to start talking. Voice only - get to know each other!');
+    bdRefresh();
+    // Auto-join the room
+    bdJoinRoom();
+  } else if (result.status === 'no_match') {
+    alert(result.message || 'No blind date users available right now. Try again soon!');
+  } else {
+    alert('Error: ' + (result.detail || 'Could not find match'));
+  }
+}
+
+function bdJoinRoom() {
+  if (!bdCurrentRoomId) {
+    alert('No active match room');
+    return;
+  }
+  toggleWalkie();
+  document.getElementById('walkieJoinCode').value = bdCurrentRoomId;
+  walkieJoinRoom();
+}
+
+async function bdChoice(choice) {
+  if (!bdCurrentMatchId) {
+    alert('No active match');
+    return;
+  }
+
+  const choiceText = {
+    'keep_talking': 'Keep Talking',
+    'move_on': 'Move On',
+    'reveal': 'Reveal Identity'
+  }[choice];
+
+  if (!confirm('Are you sure you want to "' + choiceText + '"?')) return;
+
+  const result = await Social.bdEndMatch(bdCurrentMatchId, choice);
+
+  if (result.status === 'ended') {
+    if (result.both_keep) {
+      alert(result.message);
+    } else if (result.revealed) {
+      alert(result.message);
+    } else {
+      alert(result.message);
+    }
+    bdCurrentMatchId = null;
+    bdCurrentRoomId = null;
+    bdRefresh();
+  } else if (result.status === 'waiting') {
+    document.getElementById('bdActiveMatch').style.display = 'none';
+    document.getElementById('bdWaitingSection').style.display = 'block';
+    document.getElementById('bdWaitMsg').textContent = result.message;
+    // Poll for partner's choice
+    if (bdPollInterval) clearInterval(bdPollInterval);
+    bdPollInterval = setInterval(async () => {
+      const active = await Social.bdGetActive();
+      if (active.status !== 'active') {
+        clearInterval(bdPollInterval);
+        bdPollInterval = null;
+        bdCurrentMatchId = null;
+        bdCurrentRoomId = null;
+        bdRefresh();
+      }
+    }, 3000);
+    // Stop polling after 2 minutes
+    setTimeout(() => {
+      if (bdPollInterval) {
+        clearInterval(bdPollInterval);
+        bdPollInterval = null;
+        bdRefresh();
+      }
+    }, 120000);
+  } else {
+    alert('Error: ' + (result.detail || 'Could not end match'));
+  }
+}
+
+async function bdDeleteContact(contactId) {
+  if (!confirm('Remove this blind date contact?')) return;
+  await Social.bdDeleteContact(contactId);
+  bdRefresh();
 }
 </script>
 </body>

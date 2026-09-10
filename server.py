@@ -669,6 +669,56 @@ def corporate_products():
     from corporate import get_product_list
     return jsonify({"products": get_product_list()})
 
+# --- Blind Date ---
+
+@app.route("/blinddate/optin", methods=["POST"])
+def bd_optin():
+    from blinddate import opt_in
+    body = request.json or {}
+    return jsonify(opt_in(
+        body.get("user_id",""), body.get("username",""), body.get("display_name",""),
+        body.get("gender"), body.get("age_range"), body.get("city"), body.get("country")
+    ))
+
+@app.route("/blinddate/optout", methods=["POST"])
+def bd_optout():
+    from blinddate import opt_out
+    body = request.json or {}
+    return jsonify(opt_out(body.get("user_id","")))
+
+@app.route("/blinddate/match", methods=["POST"])
+def bd_match():
+    from blinddate import find_match
+    body = request.json or {}
+    return jsonify(find_match(body.get("user_id","")))
+
+@app.route("/blinddate/end", methods=["POST"])
+def bd_end():
+    from blinddate import end_match
+    body = request.json or {}
+    return jsonify(end_match(body.get("match_id",""), body.get("user_id",""), body.get("choice","")))
+
+@app.route("/blinddate/active/<user_id>")
+def bd_active(user_id):
+    from blinddate import get_active_match
+    return jsonify(get_active_match(user_id))
+
+@app.route("/blinddate/contacts/<user_id>")
+def bd_contacts(user_id):
+    from blinddate import get_blind_contacts
+    return jsonify({"contacts": get_blind_contacts(user_id)})
+
+@app.route("/blinddate/delete_contact", methods=["POST"])
+def bd_del_contact():
+    from blinddate import delete_blind_contact
+    body = request.json or {}
+    return jsonify(delete_blind_contact(body.get("user_id",""), body.get("contact_id","")))
+
+@app.route("/blinddate/stats")
+def bd_stats():
+    from blinddate import get_blind_date_stats
+    return jsonify(get_blind_date_stats())
+
 @app.route("/")
 def serve_ui():
     return send_file(os.path.join("ui", "index.html"))

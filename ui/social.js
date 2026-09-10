@@ -332,6 +332,47 @@ const Social = {
 
   async getFineStatus() {
     return this.api(`/verify/fine_status/${this.userId}`);
+  },
+
+  // --- Blind Date ---
+
+  async bdOptIn(gender, ageRange, city, country) {
+    return this.api('/blinddate/optin', 'POST', {
+      user_id: this.userId, username: this.username, display_name: this.username,
+      gender, age_range: ageRange, city, country
+    });
+  },
+
+  async bdOptOut() {
+    return this.api('/blinddate/optout', 'POST', { user_id: this.userId });
+  },
+
+  async bdFindMatch() {
+    return this.api('/blinddate/match', 'POST', { user_id: this.userId });
+  },
+
+  async bdEndMatch(matchId, choice) {
+    return this.api('/blinddate/end', 'POST', {
+      match_id: matchId, user_id: this.userId, choice
+    });
+  },
+
+  async bdGetActive() {
+    return this.api(`/blinddate/active/${this.userId}`);
+  },
+
+  async bdGetContacts() {
+    return this.api(`/blinddate/contacts/${this.userId}`);
+  },
+
+  async bdDeleteContact(contactId) {
+    return this.api('/blinddate/delete_contact', 'POST', {
+      user_id: this.userId, contact_id: contactId
+    });
+  },
+
+  async bdGetStats() {
+    return this.api('/blinddate/stats');
   }
 };
 
