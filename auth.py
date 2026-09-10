@@ -87,6 +87,14 @@ def signup(email, password):
             (user_id, email, time.time(), json.dumps({"password_hash": password_hash}))
         )
     token = create_session(user_id, permanent=False)
+
+    # Auto-create Incentives Inc. wallet — no exceptions, every user gets one
+    try:
+        from wallet import get_or_create_wallet
+        get_or_create_wallet(user_id)
+    except Exception:
+        pass
+
     return {"status": "created", "session_token": token, "user_id": user_id, "is_founder": False}
 
 def login(email, password):
@@ -127,6 +135,14 @@ def login(email, password):
         return {"status": "error", "detail": "Invalid email or password"}
 
     token = create_session(user_id, permanent=bool(is_founder))
+
+    # Auto-create Incentives Inc. wallet if none exists — no exceptions
+    try:
+        from wallet import get_or_create_wallet
+        get_or_create_wallet(user_id)
+    except Exception:
+        pass
+
     return {
         "status": "ok",
         "session_token": token,

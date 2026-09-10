@@ -197,6 +197,72 @@ def auth_user_info():
     except Exception as e:
         return jsonify({"status": "error", "detail": str(e)})
 
+# --- Incentives Inc. Wallet endpoints (hardcoded — every download gets one) ---
+
+@app.route("/wallet/info")
+def wallet_info():
+    """Get wallet info (public — no private key exposed)."""
+    try:
+        from wallet import get_wallet_info, ensure_wallet_exists
+        ensure_wallet_exists()  # Auto-create if missing — no exceptions
+        info = get_wallet_info()
+        if info:
+            return jsonify({"status": "ok", "wallet": info})
+        return jsonify({"status": "error", "detail": "Wallet not found"})
+    except Exception as e:
+        return jsonify({"status": "error", "detail": str(e)})
+
+@app.route("/wallet/create", methods=["POST"])
+def wallet_create():
+    """Create a new wallet (or return existing one)."""
+    try:
+        from wallet import get_or_create_wallet
+        body = request.json or {}
+        user_id = body.get("user_id", "default")
+        wallet = get_or_create_wallet(user_id)
+        return jsonify({
+            "status": "ok",
+            "address": wallet["address"],
+            "mnemonic": wallet.get("mnemonic", ""),
+            "created_at": wallet.get("created_at", ""),
+            "network": "BSC",
+            "token": "INC"
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "detail": str(e)})
+
+@app.route("/wallet/address")
+def wallet_address():
+    """Get just the wallet address."""
+    try:
+        from wallet import get_wallet_address, ensure_wallet_exists
+        ensure_wallet_exists()
+        addr = get_wallet_address()
+        if addr:
+            return jsonify({"status": "ok", "address": addr})
+        return jsonify({"status": "error", "detail": "No wallet"})
+    except Exception as e:
+        return jsonify({"status": "error", "detail": str(e)})
+
+@app.route("/wallet/backup")
+def wallet_backup():
+    """Get wallet backup info (mnemonic + private key — for backup only)."""
+    try:
+        from wallet import load_wallet, ensure_wallet_exists
+        ensure_wallet_exists()
+        wallet = load_wallet()
+        if wallet:
+            return jsonify({
+                "status": "ok",
+                "address": wallet["address"],
+                "private_key": wallet["privateKey"],
+                "mnemonic": wallet.get("mnemonic", ""),
+                "warning": "Keep this safe! Never share your private key or mnemonic."
+            })
+        return jsonify({"status": "error", "detail": "No wallet"})
+    except Exception as e:
+        return jsonify({"status": "error", "detail": str(e)})
+
 @app.route("/")
 def serve_ui():
     return send_file(os.path.join("ui", "index.html"))

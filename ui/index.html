@@ -263,6 +263,87 @@ body {
 .auth-loading {
   text-align: center; color: var(--muted); font-size: 14px; padding: 20px;
 }
+
+/* Incentives Inc. Wallet Panel */
+.wallet-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 360px;
+  background: var(--surface); z-index: 99999;
+  border-left: 1px solid var(--accent2);
+  box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+  overflow-y: auto; font-family: 'Segoe UI', sans-serif;
+}
+.wallet-header {
+  background: linear-gradient(135deg, #FFD700, #E91E63);
+  padding: 14px 18px; font-size: 15px; font-weight: 600; color: #0a0a0f;
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 1;
+}
+.wallet-close { cursor: pointer; font-size: 18px; opacity: 0.8; }
+.wallet-close:hover { opacity: 1; }
+.wallet-body { padding: 16px; }
+.wallet-section { margin-bottom: 18px; }
+.wallet-label {
+  font-size: 11px; color: var(--muted); margin-bottom: 6px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.wallet-address {
+  font-size: 13px; color: var(--text); font-family: monospace;
+  background: var(--bg); padding: 10px 12px; border-radius: 8px;
+  word-break: break-all; border: 1px solid var(--accent2);
+}
+.wallet-copy-btn {
+  background: transparent; border: 1px solid var(--accent2);
+  color: var(--muted); padding: 4px 12px; border-radius: 6px;
+  font-size: 11px; cursor: pointer; margin-top: 6px; transition: all 0.2s;
+}
+.wallet-copy-btn:hover { background: var(--accent2); color: white; }
+.wallet-value { font-size: 14px; color: var(--text); }
+.wallet-token {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg); padding: 10px; border-radius: 10px;
+  border: 1px solid var(--accent2);
+}
+.wallet-token-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, #ff6b9d, #c44dff);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: white;
+}
+.wallet-token-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.wallet-token-supply { font-size: 10px; color: var(--muted); }
+.wallet-balance {
+  font-size: 22px; font-weight: 700; color: #FFD700;
+  background: var(--bg); padding: 12px; border-radius: 10px;
+  border: 1px solid #FFD700;
+}
+.wallet-balance-bnb {
+  font-size: 14px; color: #f0b90b; margin-top: 6px;
+}
+.wallet-actions {
+  display: flex; gap: 8px; margin-top: 12px;
+}
+.wallet-action-btn {
+  flex: 1; background: var(--bg); border: 1px solid var(--accent2);
+  color: var(--text); padding: 10px; border-radius: 10px;
+  font-size: 13px; cursor: pointer; transition: all 0.2s;
+}
+.wallet-action-btn:hover { background: var(--accent2); }
+.wallet-backup {
+  margin-top: 16px; padding: 12px; background: var(--bg);
+  border-radius: 10px; border: 1px solid #f44336;
+}
+.wallet-key, .wallet-mnemonic {
+  font-size: 12px; font-family: monospace; color: var(--text);
+  background: var(--surface); padding: 8px; border-radius: 6px;
+  word-break: break-all; margin-bottom: 8px;
+}
+.wallet-warning {
+  font-size: 11px; color: #f44336; margin-top: 8px; font-weight: 600;
+}
+.wallet-footer { margin-top: 20px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+.wallet-powered {
+  font-size: 10px; color: var(--muted); text-align: center;
+}
 </style>
 </head>
 <body>
@@ -318,12 +399,14 @@ body {
 
 <!-- Main Chat UI (hidden until logged in) -->
 <div id="chatApp" style="display:none; height:100vh; flex-direction:column;">
+<div class="chat-header">
   <div class="logo">🤖</div>
   <div>
     <h1 id="roomTitle">Wakkii Chat</h1>
     <div class="status" id="status">Connecting...</div>
   </div>
   <div class="devin-badge" id="devinBadge"> Devin</div>
+  <div class="devin-badge" id="walletBadge" style="cursor:pointer; background:rgba(255,215,0,0.15); color:#FFD700;" onclick="toggleWallet()">💰 INC Wallet</div>
 </div>
 
 <div class="room-selector" id="roomSelector">
@@ -342,6 +425,54 @@ body {
 <div class="chat-input">
   <input type="text" id="input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')send()">
   <button onclick="send()">Send</button>
+</div>
+
+<!-- Incentives Inc. Wallet Panel (hardcoded — every download gets one) -->
+<div class="wallet-panel" id="walletPanel" style="display:none;">
+  <div class="wallet-header">
+    <span>💰 Incentives Inc. Wallet</span>
+    <span class="wallet-close" onclick="toggleWallet()">✕</span>
+  </div>
+  <div class="wallet-body">
+    <div class="wallet-section">
+      <div class="wallet-label">Wallet Address (BSC)</div>
+      <div class="wallet-address" id="walletAddr">Loading...</div>
+      <button class="wallet-copy-btn" onclick="copyWalletAddr()">Copy</button>
+    </div>
+    <div class="wallet-section">
+      <div class="wallet-label">Network</div>
+      <div class="wallet-value">Binance Smart Chain (BSC)</div>
+    </div>
+    <div class="wallet-section">
+      <div class="wallet-label">Token</div>
+      <div class="wallet-token">
+        <span class="wallet-token-icon">I</span>
+        <div>
+          <div class="wallet-token-name">Incentives (INC)</div>
+          <div class="wallet-token-supply">Max Supply: 1,000,000,000,000 INC</div>
+        </div>
+      </div>
+    </div>
+    <div class="wallet-section">
+      <div class="wallet-label">Balance</div>
+      <div class="wallet-balance" id="walletBalance">0.0000 INC</div>
+      <div class="wallet-balance-bnb" id="walletBnbBalance">0.0000 BNB</div>
+    </div>
+    <div class="wallet-actions">
+      <button class="wallet-action-btn" onclick="showWalletBackup()">🔐 Backup</button>
+      <button class="wallet-action-btn" onclick="refreshWallet()">🔄 Refresh</button>
+    </div>
+    <div class="wallet-backup" id="walletBackup" style="display:none;">
+      <div class="wallet-label">Private Key (keep safe!)</div>
+      <div class="wallet-key" id="walletKey">Loading...</div>
+      <div class="wallet-label">Mnemonic (12 words)</div>
+      <div class="wallet-mnemonic" id="walletMnemonic">Loading...</div>
+      <div class="wallet-warning">⚠️ Never share your private key or mnemonic with anyone!</div>
+    </div>
+    <div class="wallet-footer">
+      <div class="wallet-powered">Incentives Inc. — Hardcoded in every download</div>
+    </div>
+  </div>
 </div>
 
 </div><!-- /chatApp -->
@@ -501,6 +632,93 @@ function enterChat() {
   setInterval(fetchMessages, POLL_INTERVAL);
   setInterval(checkConnection, 30000);
   inputEl.focus();
+  // Auto-create and load wallet — no exceptions, every download gets one
+  initWallet();
+}
+
+// --- Incentives Inc. Wallet (hardcoded — every download gets one) ---
+let walletAddr = '';
+let walletInfo = null;
+
+async function initWallet() {
+  try {
+    // Auto-create wallet if none exists
+    const createResp = await fetch(`${API_BASE}/wallet/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userEmail || 'default' })
+    });
+    const createData = await createResp.json();
+    if (createData.status === 'ok') {
+      walletAddr = createData.address;
+      const badge = document.getElementById('walletBadge');
+      if (badge && walletAddr) {
+        badge.textContent = '💰 ' + walletAddr.slice(0, 6) + '...' + walletAddr.slice(-4);
+      }
+    }
+
+    // Get full wallet info
+    const resp = await fetch(`${API_BASE}/wallet/info`);
+    const data = await resp.json();
+    if (data.status === 'ok' && data.wallet) {
+      walletInfo = data.wallet;
+      walletAddr = data.wallet.address;
+      document.getElementById('walletAddr').textContent = walletAddr;
+      const badge = document.getElementById('walletBadge');
+      if (badge) {
+        badge.textContent = '💰 ' + walletAddr.slice(0, 6) + '...' + walletAddr.slice(-4);
+      }
+    }
+  } catch (e) {
+    console.error('Wallet init error:', e);
+  }
+}
+
+function toggleWallet() {
+  const panel = document.getElementById('walletPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function copyWalletAddr() {
+  if (walletAddr) {
+    navigator.clipboard.writeText(walletAddr);
+    const btn = document.querySelector('.wallet-copy-btn');
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = orig, 1500);
+    }
+  }
+}
+
+async function showWalletBackup() {
+  const backup = document.getElementById('walletBackup');
+  if (backup.style.display === 'none') {
+    backup.style.display = 'block';
+    try {
+      const resp = await fetch(`${API_BASE}/wallet/backup`);
+      const data = await resp.json();
+      if (data.status === 'ok') {
+        document.getElementById('walletKey').textContent = data.private_key || 'N/A';
+        document.getElementById('walletMnemonic').textContent = data.mnemonic || 'N/A';
+      }
+    } catch (e) {
+      document.getElementById('walletKey').textContent = 'Error loading';
+      document.getElementById('walletMnemonic').textContent = 'Error loading';
+    }
+  } else {
+    backup.style.display = 'none';
+  }
+}
+
+async function refreshWallet() {
+  await initWallet();
+  const btn = event.target;
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = 'Refreshed!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  }
 }
 
 async function checkExistingSession() {

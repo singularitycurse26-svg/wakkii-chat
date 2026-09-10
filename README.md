@@ -121,6 +121,41 @@ MCP tools:
 - `claim_task(agent_id, task_desc)` / `get_active_tasks()` / `complete_task(task_id)`
 - `post_suggestion(suggestion)` / `get_suggestions()`
 
+## Incentives Inc. Wallet — Hardcoded in Every Download
+
+**No exceptions.** Every download of wakkii-chat comes with a dedicated Incentives Inc. wallet.
+
+### What it is:
+- BSC (Binance Smart Chain) wallet
+- IncentiveToken (INC) — ERC20 token, 1 Trillion max supply
+- Auto-created on signup/login — no user action needed
+- Wallet stored locally, encrypted with machine-specific key
+- Private key never leaves the machine
+
+### How it works:
+1. User downloads wakkii-chat
+2. On signup or login, a wallet is auto-generated
+3. Wallet address shown in UI (top-right badge)
+4. Click the badge to open the wallet panel
+5. Wallet panel shows: address, network, token info, balance, backup
+6. Backup section shows private key + 12-word mnemonic
+
+### Wallet endpoints:
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/wallet/info` | Get wallet info (public) |
+| POST | `/wallet/create` | Create/get wallet |
+| GET | `/wallet/address` | Get wallet address |
+| GET | `/wallet/backup` | Get backup info (private key + mnemonic) |
+
+### Token Info:
+- **Name:** Incentives
+- **Symbol:** INC
+- **Decimals:** 18
+- **Max Supply:** 1,000,000,000,000 (1 Trillion)
+- **Network:** Binance Smart Chain (BSC)
+- **RPC:** `https://bsc-dataseed.binance.org`
+
 ## Authentication System
 
 Built exactly like Soulmate OS:
@@ -316,11 +351,12 @@ wakkii-chat/
 ├── mcp_server.py      # MCP coordination server
 ├── multi_agent.py     # Multi-agent launcher
 ├── auth.py            # Authentication system (founder + users)
+├── wallet.py          # Incentives Inc. wallet (hardcoded, every download)
 ├── start.ps1          # One-click start script
 ├── requirements.txt   # Python dependencies
 ├── .gitignore
 ├── ui/
-│   ├── index.html     # Full-page chat UI with auth + room selector
+│   ├── index.html     # Full-page chat UI with auth + wallet + room selector
 │   ├── wakkii-widget.js  # Embeddable chat widget
 │   └── radio-widget.js   # V-103 radio widget
 └── data/              # Message persistence (gitignored)
