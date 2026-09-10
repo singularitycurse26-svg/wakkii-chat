@@ -1,4 +1,48 @@
-﻿# Aceline
+﻿# Aceline — International Incorporated OS System
+
+**Incentives Inc.** — AI Company Corporation (International Entity)
+
+Aceline and Soulmate OS are international incorporated operating systems under Incentives Inc., an AI company corporation international entity. All products in the Incentives Inc. ecosystem are part of this incorporated OS platform.
+
+## Corporate Identity
+
+| Field | Value |
+|-------|-------|
+| Legal Name | Incentives Inc. |
+| Entity Type | AI Company Corporation |
+| Jurisdiction | International |
+| Formation Status | Declared |
+| Founder | hawpetossjustin25@gmail.com |
+
+## Products Under Incentives Inc.
+
+1. **Soulmate OS** — International Incorporated Operating System (Personal AI companion OS)
+2. **Aceline OS** — International Incorporated Operating System (Multi-agent social/communication OS)
+3. **Wakkii Links** — Communication layer (walkie-talki voice/video)
+4. **Wakkii Chat / Aceline** — Social platform (chat, social media, live streaming, payments)
+5. **INC Stablecoin** — Native stablecoin for the ecosystem
+6. **Aceline AI** — Autonomous coding/development agent
+7. **Soulmate Walkie** — Voice interface for Soulmate OS
+8. **OpenMausBot** — Universal AI agent framework with persistent memory
+
+## Principles
+
+- Local-first architecture — user data stays on device
+- International incorporation — no single jurisdiction control
+- AI company corporation — AI agents are first-class entities
+- Open ecosystem — all products interconnect
+- Founder-governed — founder account has permanent access
+- INC stablecoin — native economics for all products
+- Zero tolerance for money-asking on platform
+- State ID verification required for all users
+
+## Corporate Endpoints
+
+- `GET /corporate/info` — Full corporate identity + products + principles
+- `GET /corporate/status` — Corporate formation status
+- `GET /corporate/products` — List all Incentives Inc. products
+
+---
 
 A standalone multi-agent chat system with Cline as the 24/7 front desk assistant, multiple Wakkii Agents working on different projects simultaneously, MCP coordination for split-brain agent communication, Devin AI integration with GLM-5.1 fallback, and a V-103 radio widget.
 

@@ -652,6 +652,23 @@ def verify_activate_fines():
     from verification import activate_fine_system
     return jsonify(activate_fine_system())
 
+# --- Incentives Inc. Corporate Identity ---
+
+@app.route("/corporate/info")
+def corporate_info():
+    from corporate import get_corporate_info
+    return jsonify(get_corporate_info())
+
+@app.route("/corporate/status")
+def corporate_status():
+    from corporate import get_corporate_status
+    return jsonify(get_corporate_status())
+
+@app.route("/corporate/products")
+def corporate_products():
+    from corporate import get_product_list
+    return jsonify({"products": get_product_list()})
+
 @app.route("/")
 def serve_ui():
     return send_file(os.path.join("ui", "index.html"))

@@ -691,6 +691,7 @@ body {
   <div class="devin-badge" id="walletBadge" style="cursor:pointer; background:rgba(255,215,0,0.15); color:#FFD700;" onclick="toggleWallet()">💰 INC Wallet</div>
   <div class="devin-badge" id="walkieBadge" style="cursor:pointer; background:rgba(0,230,118,0.15); color:#00e676;" onclick="toggleWalkie()">🎙️ Walkie</div>
   <div class="devin-badge" id="socialBadge" style="cursor:pointer; background:rgba(33,150,243,0.15); color:#2196f3;" onclick="toggleSocial()">🌐 Social</div>
+  <div class="devin-badge" id="corpBadge" style="cursor:pointer; background:rgba(156,39,176,0.15); color:#9C27B0;" onclick="showCorporateInfo()">🏛️ Inc. Inc.</div>
 </div>
 
 <div class="room-selector" id="roomSelector">
@@ -1011,6 +1012,16 @@ body {
   <div class="verify-check" id="verifyFlashIcon">✓</div>
   <div class="verify-info" id="verifyFlashName">Verified User</div>
   <div class="verify-age" id="verifyFlashAge">Age: --</div>
+</div>
+
+<!-- Corporate Info Modal -->
+<div class="verify-overlay" id="corpOverlay">
+  <div class="verify-modal" style="max-width:480px;">
+    <div class="verify-title">Incentives Inc.</div>
+    <div class="verify-subtitle">AI Company Corporation — International Entity</div>
+    <div id="corpContent" style="max-height:400px; overflow-y:auto;"></div>
+    <button class="verify-btn secondary" onclick="document.getElementById('corpOverlay').classList.remove('show')">Close</button>
+  </div>
 </div>
 
 <script>
@@ -1418,6 +1429,39 @@ async function checkVerifiedAccess() {
     return false;
   }
   return true;
+}
+
+// --- Corporate Info ---
+async function showCorporateInfo() {
+  const content = document.getElementById('corpContent');
+  try {
+    const res = await fetch(API_BASE + '/corporate/info');
+    const info = await res.json();
+    let html = '<div style="font-size:13px; margin-bottom:12px;">' + info.description + '</div>';
+    html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px;">';
+    html += '<div style="font-size:11px; color:var(--muted);">Legal Name</div><div style="font-size:12px; font-weight:600;">' + info.legal_name + '</div>';
+    html += '<div style="font-size:11px; color:var(--muted);">Entity Type</div><div style="font-size:12px;">' + info.entity_type + '</div>';
+    html += '<div style="font-size:11px; color:var(--muted);">Jurisdiction</div><div style="font-size:12px;">' + info.jurisdiction + '</div>';
+    html += '<div style="font-size:11px; color:var(--muted);">Status</div><div style="font-size:12px; color:#00e676;">' + info.formation_status + '</div>';
+    html += '<div style="font-size:11px; color:var(--muted);">Founder</div><div style="font-size:12px;">' + info.founder + '</div>';
+    html += '</div>';
+    html += '<div style="font-size:13px; font-weight:600; margin-bottom:8px;">Products (' + info.products.length + ')</div>';
+    info.products.forEach(p => {
+      html += '<div style="background:var(--bg); border-radius:8px; padding:8px; margin-bottom:6px;">';
+      html += '<div style="font-size:12px; font-weight:600;">' + p.name + '</div>';
+      html += '<div style="font-size:10px; color:var(--muted);">' + p.type + ' - ' + p.status + '</div>';
+      html += '<div style="font-size:11px; color:var(--muted); margin-top:2px;">' + p.description + '</div>';
+      html += '</div>';
+    });
+    html += '<div style="font-size:13px; font-weight:600; margin:12px 0 8px;">Principles</div>';
+    info.principles.forEach(pr => {
+      html += '<div style="font-size:11px; padding:4px 0; border-bottom:1px solid var(--surface);">' + pr + '</div>';
+    });
+    content.innerHTML = html;
+  } catch (e) {
+    content.innerHTML = '<div style="font-size:12px; color:var(--muted);">Could not load corporate info</div>';
+  }
+  document.getElementById('corpOverlay').classList.add('show');
 }
 
 // --- Incentives Inc. Wallet (hardcoded — every download gets one) ---
