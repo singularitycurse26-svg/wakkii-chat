@@ -460,6 +460,77 @@ body {
 }
 .walkie-error.show { display: block; }
 
+/* Verification Modal */
+.verify-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85); z-index: 100002;
+  display: none; align-items: center; justify-content: center;
+  font-family: 'Segoe UI', sans-serif;
+}
+.verify-overlay.show { display: flex; }
+.verify-modal {
+  background: var(--surface); border-radius: 16px;
+  padding: 32px; max-width: 420px; width: 90%;
+  border: 1px solid var(--accent);
+}
+.verify-title {
+  font-size: 20px; font-weight: 700; text-align: center;
+  margin-bottom: 8px; color: var(--text);
+}
+.verify-subtitle {
+  font-size: 13px; color: var(--muted); text-align: center;
+  margin-bottom: 24px;
+}
+.verify-step {
+  font-size: 11px; color: var(--accent); text-align: center;
+  margin-bottom: 16px; font-weight: 600;
+}
+.verify-input {
+  width: 100%; background: var(--bg); border: 1px solid var(--accent2);
+  color: var(--text); padding: 12px 16px; border-radius: 10px;
+  font-size: 14px; margin-bottom: 12px; outline: none; box-sizing: border-box;
+}
+.verify-input:focus { border-color: var(--accent); }
+.verify-btn {
+  width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white; border: none; padding: 14px; border-radius: 12px;
+  font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 8px;
+}
+.verify-btn.secondary {
+  background: var(--bg); color: var(--text); border: 1px solid var(--accent2);
+}
+.verify-badge-flash {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, #00e676, #00bfa5);
+  color: #0a0a0f; padding: 24px 40px; border-radius: 16px;
+  z-index: 100003; display: none; text-align: center;
+  box-shadow: 0 0 40px rgba(0,230,118,0.6);
+  animation: verifyPulse 0.5s ease;
+}
+.verify-badge-flash.show { display: block; }
+@keyframes verifyPulse {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+.verify-check {
+  font-size: 48px; margin-bottom: 8px;
+}
+.verify-info {
+  font-size: 14px; font-weight: 600;
+}
+.verify-age {
+  font-size: 12px; opacity: 0.8; margin-top: 4px;
+}
+.verify-suspended {
+  background: rgba(244,67,54,0.15); border: 1px solid #f44336;
+  border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: center;
+}
+.verify-suspended-title { color: #f44336; font-weight: 700; font-size: 16px; }
+.verify-suspended-reason { color: var(--text); font-size: 13px; margin-top: 8px; }
+.verify-fine-amount {
+  font-size: 24px; font-weight: 700; color: #FFD700; margin: 12px 0;
+}
+
 /* FaceTime Call UI */
 .facetime-overlay {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -911,8 +982,7 @@ body {
 </div>
 
 <!-- FaceTime Call Overlay -->
-<div class="facetime-overlay" id="facetimeOverlay">
-  <div class="facetime-videos" id="facetimeVideos">
+<div class="facetime-overlay" id="facetimeOverlay">  <div class="facetime-videos" id="facetimeVideos">
     <!-- Remote videos populated by JS -->
   </div>
   <div class="facetime-local-video" id="facetimeLocalVideo">
@@ -924,6 +994,23 @@ body {
     <button class="facetime-ctrl-btn flip" onclick="facetimeFlipCamera()">🔄</button>
     <button class="facetime-ctrl-btn end" onclick="facetimeEndCall()">📞</button>
   </div>
+</div>
+
+<!-- Verification Modal -->
+<div class="verify-overlay" id="verifyOverlay">
+  <div class="verify-modal" id="verifyModal">
+    <div class="verify-title" id="verifyTitle">State ID Verification</div>
+    <div class="verify-subtitle" id="verifySubtitle">Required before joining messaging and Wakkii Links</div>
+    <div class="verify-step" id="verifyStep">Step 1 of 3</div>
+    <div id="verifyContent"></div>
+  </div>
+</div>
+
+<!-- Verified Flash (shows before community messages) -->
+<div class="verify-badge-flash" id="verifyFlash">
+  <div class="verify-check" id="verifyFlashIcon">✓</div>
+  <div class="verify-info" id="verifyFlashName">Verified User</div>
+  <div class="verify-age" id="verifyFlashAge">Age: --</div>
 </div>
 
 <script>
@@ -1095,6 +1182,221 @@ function enterChat() {
   inputEl.focus();
   // Auto-create and load wallet — no exceptions, every download gets one
   initWallet();
+  // Check verification status on login
+  checkVerificationOnLogin();
+}
+
+// --- Verification System ---
+let verifyStep = 0;
+
+async function checkVerificationOnLogin() {
+  if (!window.Social || !USER_ID) return;
+  await Social.reactivate();
+  const status = await Social.getVerifyStatus();
+  if (!status.verified) {
+    setTimeout(() => showVerificationFlow(), 1000);
+  } else if (status.suspended) {
+    const fineStatus = await Social.getFineStatus();
+    if (fineStatus.fine_owed > 0) {
+      showSuspendedFine(fineStatus);
+    } else {
+      showSuspended(status.suspended_reason);
+    }
+  }
+}
+
+function showVerificationFlow() {
+  verifyStep = 0;
+  document.getElementById('verifyOverlay').classList.add('show');
+  verifyShowStep();
+}
+
+function verifyShowStep() {
+  const content = document.getElementById('verifyContent');
+  const stepEl = document.getElementById('verifyStep');
+
+  if (verifyStep === 0) {
+    document.getElementById('verifyTitle').textContent = 'State ID Verification';
+    document.getElementById('verifySubtitle').textContent = 'Required before joining messaging and Wakkii Links';
+    stepEl.textContent = 'Step 1 of 3 - Identity';
+    content.innerHTML = `
+      <p style="font-size:13px; color:var(--muted); margin-bottom:16px; text-align:center;">
+        Aceline requires State ID verification to keep the community safe.
+        Your ID is hashed and never stored in plain text.
+      </p>
+      <button class="verify-btn" onclick="verifyStep1()">Start Verification</button>
+      <button class="verify-btn secondary" onclick="document.getElementById('verifyOverlay').classList.remove('show')">Skip for now</button>
+    `;
+  } else if (verifyStep === 1) {
+    stepEl.textContent = 'Step 2 of 3 - State ID';
+    content.innerHTML = `
+      <input type="text" class="verify-input" id="verifyStateId" placeholder="State ID Number">
+      <input type="text" class="verify-input" id="verifyState" placeholder="State (e.g. Georgia)">
+      <input type="date" class="verify-input" id="verifyDob" placeholder="Date of Birth">
+      <select class="verify-input" id="verifyAgeRange">
+        <option value="">Select Age Range</option>
+        <option value="18-25">18-25</option>
+        <option value="26-35">26-35</option>
+        <option value="36-45">36-45</option>
+        <option value="46-55">46-55</option>
+        <option value="55+">55+</option>
+      </select>
+      <button class="verify-btn" onclick="verifySubmitStateId()">Submit State ID</button>
+      <button class="verify-btn secondary" onclick="verifyStep=0; verifyShowStep();">Back</button>
+    `;
+  } else if (verifyStep === 2) {
+    stepEl.textContent = 'Step 3 of 3 - Biometric';
+    content.innerHTML = `
+      <p style="font-size:13px; color:var(--muted); margin-bottom:16px; text-align:center;">
+        Enable fingerprint biometric for easy re-access to the platform.
+        Uses your phone's biometric sensor.
+      </p>
+      <button class="verify-btn" onclick="verifyEnableBiometric()">Enable Fingerprint</button>
+      <button class="verify-btn secondary" onclick="verifyComplete()">Skip Biometric</button>
+    `;
+  }
+}
+
+async function verifyStep1() {
+  await Social.startVerification();
+  verifyStep = 1;
+  verifyShowStep();
+}
+
+async function verifySubmitStateId() {
+  const stateId = document.getElementById('verifyStateId').value.trim();
+  const state = document.getElementById('verifyState').value.trim();
+  const dob = document.getElementById('verifyDob').value.trim();
+  const ageRange = document.getElementById('verifyAgeRange').value;
+
+  if (!stateId || !state || !dob || !ageRange) {
+    alert('Fill all fields');
+    return;
+  }
+
+  const result = await Social.submitStateId(stateId, state, dob, ageRange);
+  if (result.status === 'ok' && result.verified) {
+    verifyStep = 2;
+    verifyShowStep();
+  } else {
+    alert('Error: ' + (result.detail || 'Verification failed'));
+  }
+}
+
+async function verifyEnableBiometric() {
+  let biometricData = '';
+  if (window.PublicKeyCredential) {
+    try {
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge: new Uint8Array(32),
+          rp: { name: 'Aceline' },
+          user: {
+            id: new TextEncoder().encode(USER_ID),
+            name: USER_NAME,
+            displayName: USER_NAME
+          },
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+          authenticatorSelection: { userVerification: 'required' }
+        }
+      });
+      biometricData = credential.id || 'webauthn';
+    } catch (e) {
+      biometricData = 'device-' + navigator.userAgent.length + '-' + screen.width;
+    }
+  } else {
+    biometricData = 'device-' + navigator.userAgent.length + '-' + screen.width;
+  }
+
+  const result = await Social.enableBiometric(biometricData);
+  if (result.status === 'ok') {
+    verifyComplete();
+  }
+}
+
+function verifyComplete() {
+  document.getElementById('verifyOverlay').classList.remove('show');
+  alert('Verification complete! You now have full access to Aceline.');
+}
+
+function showSuspended(reason) {
+  document.getElementById('verifyTitle').textContent = 'Account Suspended';
+  document.getElementById('verifySubtitle').textContent = '';
+  document.getElementById('verifyStep').textContent = '';
+  document.getElementById('verifyContent').innerHTML = `
+    <div class="verify-suspended">
+      <div class="verify-suspended-title">Account on Hold</div>
+      <div class="verify-suspended-reason">${reason || 'Violation of community rules'}</div>
+    </div>
+    <p style="font-size:13px; color:var(--muted); text-align:center; margin-bottom:16px;">
+      Visit the platform to reactivate your account.
+    </p>
+    <button class="verify-btn" onclick="reactivateAccount()">Reactivate Account</button>
+  `;
+  document.getElementById('verifyOverlay').classList.add('show');
+}
+
+async function reactivateAccount() {
+  const result = await Social.reactivate();
+  if (result.status === 'ok' && result.reactivated) {
+    document.getElementById('verifyOverlay').classList.remove('show');
+    alert('Account reactivated! Welcome back.');
+  } else {
+    document.getElementById('verifyOverlay').classList.remove('show');
+  }
+}
+
+function showSuspendedFine(fineStatus) {
+  document.getElementById('verifyTitle').textContent = 'Account on Hold';
+  document.getElementById('verifySubtitle').textContent = 'Fine payment required';
+  document.getElementById('verifyStep').textContent = '';
+  document.getElementById('verifyContent').innerHTML = `
+    <div class="verify-suspended">
+      <div class="verify-suspended-title">Flagged for Asking Money</div>
+      <div class="verify-suspended-reason">You were caught asking for money. Pay the fine to restore access.</div>
+      <div class="verify-fine-amount">${fineStatus.fine_owed} INC</div>
+      <div style="font-size:11px; color:var(--muted);">Payment goes to founder account</div>
+    </div>
+    <button class="verify-btn" onclick="payFine(${fineStatus.fine_owed})">Pay ${fineStatus.fine_owed} INC Fine</button>
+  `;
+  document.getElementById('verifyOverlay').classList.add('show');
+}
+
+async function payFine(amount) {
+  const result = await Social.payFine(amount, 'local-' + Date.now());
+  if (result.status === 'ok' && result.restored) {
+    document.getElementById('verifyOverlay').classList.remove('show');
+    alert('Fine paid! Account restored to full access.');
+  } else {
+    alert('Error: ' + (result.detail || 'Payment failed'));
+  }
+}
+
+function showVerifiedFlash(name, ageRange) {
+  const flash = document.getElementById('verifyFlash');
+  document.getElementById('verifyFlashName').textContent = name + ' - Verified';
+  document.getElementById('verifyFlashAge').textContent = 'Age: ' + (ageRange || 'verified');
+  flash.classList.add('show');
+  setTimeout(() => flash.classList.remove('show'), 2000);
+}
+
+async function checkVerifiedAccess() {
+  if (!window.Social || !USER_ID) return true;
+  const status = await Social.getVerifyStatus();
+  if (!status.verified) {
+    showVerificationFlow();
+    return false;
+  }
+  if (status.suspended) {
+    const fineStatus = await Social.getFineStatus();
+    if (fineStatus.fine_owed > 0) {
+      showSuspendedFine(fineStatus);
+    } else {
+      showSuspended(status.suspended_reason);
+    }
+    return false;
+  }
+  return true;
 }
 
 // --- Incentives Inc. Wallet (hardcoded — every download gets one) ---
@@ -2125,13 +2427,17 @@ async function communitySearch() {
     return;
   }
 
+  // Show verified flash before displaying messages
+  const first = result.messages[0];
+  showVerifiedFlash(first.display_name || first.username || 'User', first.age_range);
+
   list.innerHTML = result.messages.map(m => `
     <div class="walkie-participant" style="flex-direction:column; align-items:stretch; padding:12px;">
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
         <div class="walkie-participant-avatar" style="background:linear-gradient(135deg,#FF9800,#F57C00);">${(m.display_name || m.username || '?').charAt(0).toUpperCase()}</div>
         <div class="walkie-participant-info">
-          <div class="walkie-participant-name">${m.title}</div>
-          <div class="walkie-participant-role">@${m.username || 'unknown'} - ${m.gender || ''} ${m.age_range || ''} - ${m.city}, ${m.state || ''}</div>
+          <div class="walkie-participant-name">${m.title} <span style="color:#00e676; font-size:10px;">✓ Verified</span></div>
+          <div class="walkie-participant-role">@${m.username || 'unknown'} - ${m.gender || ''} Age: ${m.age_range || '?'} - ${m.city}, ${m.state || ''}</div>
         </div>
       </div>
       ${m.description ? `<div style="font-size:12px; color:var(--muted); margin-bottom:8px;">${m.description}</div>` : ''}

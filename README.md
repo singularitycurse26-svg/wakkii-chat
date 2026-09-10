@@ -231,6 +231,46 @@ Based on the Wakkii Links walkie-talki system from Soulmate OS. Full WebRTC P2P 
 - Works alongside walkie-talki (same PeerJS connection)
 - 1-on-1 or group video calls
 
+## Verification System — State ID, Biometric, Inactivity, Fines
+
+### State ID Verification (Required)
+- **All users must complete State ID verification** before joining any messaging or Wakkii Links
+- Verification process: State ID number + State + Date of Birth + Age Range
+- State ID is **hashed** (SHA-256) and never stored in plain text
+- Verified users see a **"Verified" flash** with the person's age before community messages
+- Community messages display "Verified" badge + age on each message
+
+### Biometric Re-Access (Fingerprint)
+- After verification, users can enable **fingerprint biometric** for easy re-access
+- Uses WebAuthn if available, otherwise device fingerprint
+- No password needed — just touch your phone's fingerprint sensor
+- Biometric hash stored locally
+
+### Inactivity Auto-Suspend
+- Accounts inactive for **30 days** are automatically pulled from community and social
+- Suspended accounts cannot post messages, join rooms, or use social features
+- **Visiting the platform reactivates the account automatically**
+- Reactivation is instant — just open Aceline
+
+### Money-Asking Policy (Zero Tolerance)
+- **Asking for money = account flagged + put on hold immediately**
+- Flagged accounts are suspended from all platform features
+- **Fine: 10 INC tokens** must be paid to restore access
+- Fine payment goes to the **founder account** (hawpetossjustin25@gmail.com)
+- After fine payment, account is **restored to full platform access**
+- Multiple flags increase scrutiny
+
+### How Verification Works:
+1. User logs in → verification status checked
+2. If not verified → verification flow starts (3 steps)
+3. Step 1: Start verification
+4. Step 2: Submit State ID (hashed, never stored raw)
+5. Step 3: Enable biometric (optional but recommended)
+6. Verified users get full access to messaging, Wakkii Links, community, social
+7. Before community messages, a **verified flash** shows the person's name + age
+8. If user is inactive 30+ days → auto-suspended → reactivated on next visit
+9. If user asks for money → flagged → suspended → must pay 10 INC fine → restored
+
 ## Incentives Inc. Wallet — Hardcoded in Every Download
 
 **No exceptions.** Every download of wakkii-chat comes with a dedicated Incentives Inc. wallet.

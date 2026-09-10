@@ -583,6 +583,64 @@ def media_streams_active():
     from media import get_active_streams
     return jsonify({"streams": get_active_streams()})
 
+# --- Verification (State ID, Biometric, Inactivity, Fines) ---
+
+@app.route("/verify/start", methods=["POST"])
+def verify_start():
+    from verification import start_verification
+    body = request.json or {}
+    return jsonify(start_verification(body.get("user_id",""), body.get("username",""), body.get("email","")))
+
+@app.route("/verify/state_id", methods=["POST"])
+def verify_state_id():
+    from verification import submit_state_id
+    body = request.json or {}
+    return jsonify(submit_state_id(body.get("user_id",""), body.get("state_id",""),
+        body.get("state",""), body.get("dob",""), body.get("age_range","")))
+
+@app.route("/verify/biometric/enable", methods=["POST"])
+def verify_bio_enable():
+    from verification import enable_biometric
+    body = request.json or {}
+    return jsonify(enable_biometric(body.get("user_id",""), body.get("biometric_data","")))
+
+@app.route("/verify/biometric/check", methods=["POST"])
+def verify_bio_check():
+    from verification import verify_biometric
+    body = request.json or {}
+    return jsonify(verify_biometric(body.get("user_id",""), body.get("biometric_data","")))
+
+@app.route("/verify/status/<user_id>")
+def verify_status(user_id):
+    from verification import get_verification_status, check_inactivity
+    status = get_verification_status(user_id)
+    inactivity = check_inactivity(user_id)
+    return jsonify({**status, **inactivity})
+
+@app.route("/verify/reactivate", methods=["POST"])
+def verify_reactivate():
+    from verification import reactivate_user
+    body = request.json or {}
+    return jsonify(reactivate_user(body.get("user_id","")))
+
+@app.route("/verify/flag_money", methods=["POST"])
+def verify_flag():
+    from verification import flag_for_money_asking
+    body = request.json or {}
+    return jsonify(flag_for_money_asking(body.get("flagged_user_id",""), body.get("flagged_by",""),
+        body.get("reason",""), body.get("evidence","")))
+
+@app.route("/verify/pay_fine", methods=["POST"])
+def verify_pay_fine():
+    from verification import pay_fine
+    body = request.json or {}
+    return jsonify(pay_fine(body.get("user_id",""), body.get("amount",0), body.get("tx_hash","")))
+
+@app.route("/verify/fine_status/<user_id>")
+def verify_fine_status(user_id):
+    from verification import get_fine_status
+    return jsonify(get_fine_status(user_id))
+
 @app.route("/")
 def serve_ui():
     return send_file(os.path.join("ui", "index.html"))

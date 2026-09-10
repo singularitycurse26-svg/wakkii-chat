@@ -281,6 +281,56 @@ const Social = {
 
   async getActiveStreams() {
     return this.api('/media/streams/active');
+  },
+
+  // --- Verification ---
+
+  async startVerification() {
+    return this.api('/verify/start', 'POST', {
+      user_id: this.userId, username: this.username, email: this.userId
+    });
+  },
+
+  async submitStateId(stateId, state, dob, ageRange) {
+    return this.api('/verify/state_id', 'POST', {
+      user_id: this.userId, state_id: stateId, state, dob, age_range: ageRange
+    });
+  },
+
+  async enableBiometric(biometricData) {
+    return this.api('/verify/biometric/enable', 'POST', {
+      user_id: this.userId, biometric_data: biometricData
+    });
+  },
+
+  async verifyBiometric(biometricData) {
+    return this.api('/verify/biometric/check', 'POST', {
+      user_id: this.userId, biometric_data: biometricData
+    });
+  },
+
+  async getVerifyStatus() {
+    return this.api(`/verify/status/${this.userId}`);
+  },
+
+  async reactivate() {
+    return this.api('/verify/reactivate', 'POST', { user_id: this.userId });
+  },
+
+  async flagForMoney(flaggedUserId, reason, evidence) {
+    return this.api('/verify/flag_money', 'POST', {
+      flagged_user_id: flaggedUserId, flagged_by: this.userId, reason, evidence
+    });
+  },
+
+  async payFine(amount, txHash) {
+    return this.api('/verify/pay_fine', 'POST', {
+      user_id: this.userId, amount, tx_hash: txHash
+    });
+  },
+
+  async getFineStatus() {
+    return this.api(`/verify/fine_status/${this.userId}`);
   }
 };
 
