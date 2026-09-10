@@ -191,6 +191,61 @@ Built exactly like Soulmate OS:
 
 ## Installation
 
+### One-Click Install (recommended)
+
+1. Download Aceline from GitHub
+2. Right-click `install.ps1` -> **Run with PowerShell**
+3. If SmartScreen blocks it:
+   - Click **More info**
+   - Click **Run anyway**
+4. The installer will:
+   - Unblock all downloaded files (SmartScreen workaround)
+   - Add Windows Defender exclusion for Aceline
+   - Install Python dependencies
+   - Create desktop shortcut + Start Menu entry
+   - Configure Cline for Aceline
+   - Register Aceline with Windows
+   - Start Aceline
+
+### Manual Install
+
+```powershell
+cd C:\Users\you\Aceline
+.\install.ps1
+```
+
+OR:
+
+```powershell
+python setup.py
+python desktop.py
+```
+
+### SmartScreen Workaround
+
+Windows SmartScreen blocks unrecognized apps. To bypass:
+
+**Option 1 — Click through:**
+1. Click **More info** on the SmartScreen warning
+2. Click **Run anyway**
+
+**Option 2 — Unblock files:**
+1. Right-click the downloaded folder
+2. Click **Properties**
+3. Check **Unblock** at the bottom
+4. Click **OK**
+
+**Option 3 — PowerShell (Admin):**
+```powershell
+Get-ChildItem -Path "C:\path\to\Aceline" -Recurse | Unblock-File
+```
+
+**Option 4 — Run installer:**
+```powershell
+.\install.ps1
+```
+The installer auto-unblocks all files and adds Defender exclusion.
+
 ### Prerequisites
 - Python 3.11+
 - Node.js 18+ (for Cline CLI)
