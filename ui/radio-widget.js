@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Wakkii Radio Widget — V-103 Atlanta floating player
  * 
  * Auto-creates a floating radio widget at bottom-left of the page.

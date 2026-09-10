@@ -1,4 +1,4 @@
-"""
+﻿"""
 Auto-Suggestion Engine — 10 suggestions every 15 minutes
 
 Cline analyzes universal memory + journal + projects and generates 10 suggestions.

@@ -1,5 +1,5 @@
-"""
-Wakkii Chat Authentication System
+﻿"""
+Aceline Authentication System
 
 Built exactly like Soulmate OS:
 - Founder account: hawpetossjustin25@gmail.com — free forever, all features unlocked

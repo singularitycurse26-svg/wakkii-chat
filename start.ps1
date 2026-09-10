@@ -1,4 +1,4 @@
-# Wakkii Chat — Start Script
+﻿# Aceline — Start Script
 # Starts MCP server, chat server, and multi-agent manager (Cline + agents)
 # Usage: .\start.ps1
 
@@ -7,7 +7,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "  WAKKII CHAT — Multi-Agent + Cline + MCP" -ForegroundColor Cyan
+Write-Host "  Aceline — Multi-Agent + Cline + MCP" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -45,7 +45,7 @@ $agent = Start-Process -FilePath $py -ArgumentList "$ScriptDir\multi_agent.py" -
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "  WAKKII CHAT IS RUNNING!" -ForegroundColor Cyan
+Write-Host "  Aceline IS RUNNING!" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Chat UI:  http://localhost:8085" -ForegroundColor White

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Wakkii Agent — Smart Harness with Auto-Configuration
 
 A 24/7 autonomous coding agent that lives in chat and works on projects.

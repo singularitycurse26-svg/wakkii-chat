@@ -1,4 +1,4 @@
-# Wakkii Chat Desktop — Start Script
+﻿# Aceline Desktop — Start Script
 # Detects Windows version, starts servers, launches desktop UI
 # Usage: .\start-desktop.ps1
 
@@ -7,7 +7,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "  WAKKII CHAT DESKTOP — Windows UI" -ForegroundColor Cyan
+Write-Host "  Aceline Desktop — Windows UI" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -23,8 +23,8 @@ Write-Host "[1/2] Installing dependencies..." -ForegroundColor Yellow
 & $py -m pip install --break-system-packages -r "$ScriptDir\requirements.txt" --quiet 2>&1 | Out-Null
 
 # Start desktop app
-Write-Host "[2/2] Starting Wakkii Chat Desktop..." -ForegroundColor Green
+Write-Host "[2/2] Starting Aceline Desktop..." -ForegroundColor Green
 & $py "$ScriptDir\desktop.py"
 
 Write-Host ""
-Write-Host "Wakkii Chat Desktop closed." -ForegroundColor Gray
+Write-Host "Aceline Desktop closed." -ForegroundColor Gray

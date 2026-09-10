@@ -1,5 +1,5 @@
-"""
-Wakkii Chat Desktop — Windows UI Software
+﻿"""
+Aceline Desktop — Windows UI Software
 
 A custom-built desktop application that:
 - Detects Windows version and adapts UI accordingly
@@ -187,7 +187,7 @@ def build_webview2_app(win_info):
     if win_info["supports_rounded_corners"]:
         # Windows 11 — modern style
         window_config = {
-            "title": "Wakkii Chat — AI Agent Ecosystem",
+            "title": "Aceline — AI Agent Ecosystem",
             "width": 1200,
             "height": 800,
             "min_size": (800, 600),
@@ -197,7 +197,7 @@ def build_webview2_app(win_info):
     else:
         # Windows 10/8/7 — classic style
         window_config = {
-            "title": "Wakkii Chat",
+            "title": "Aceline",
             "width": 1000,
             "height": 700,
             "min_size": (600, 500),
@@ -206,7 +206,7 @@ def build_webview2_app(win_info):
 
     # Start server if not running
     if not is_server_running():
-        print("Starting Wakkii Chat server...")
+        print("Starting Aceline Server...")
         start_server()
 
     if not wait_for_server():
@@ -214,7 +214,7 @@ def build_webview2_app(win_info):
         return
 
     url = f"http://127.0.0.1:{SERVER_PORT}"
-    print(f"Opening Wakkii Chat at {url}")
+    print(f"Opening Aceline at {url}")
 
     # Create window
     window = webview.create_window(**window_config, url=url)
@@ -250,17 +250,17 @@ def build_tkinter_app(win_info):
         # Windows 11 — modern dark with acrylic-like effect
         COLORS["bg"] = "#0a0a0f"
         COLORS["surface"] = "#1a1a2e"
-        window_title = "Wakkii Chat — AI Agent Ecosystem"
+        window_title = "Aceline — AI Agent Ecosystem"
         window_size = "1200x800"
     elif win_info["ui_mode"] == "win10":
         # Windows 10 — dark mode
-        window_title = "Wakkii Chat"
+        window_title = "Aceline"
         window_size = "1000x700"
     else:
         # Windows 8/7 — classic
         COLORS["bg"] = "#1a1a2e"
         COLORS["surface"] = "#252540"
-        window_title = "Wakkii Chat"
+        window_title = "Aceline"
         window_size = "900x650"
 
     root = tk.Tk()
@@ -275,7 +275,7 @@ def build_tkinter_app(win_info):
     header.pack_propagate(False)
 
     title_label = tk.Label(
-        header, text="🤖 Wakkii Chat",
+        header, text="🤖 Aceline",
         bg=COLORS["accent"], fg="white",
         font=(tkfont.Font(family="Segoe UI", size=14, weight="bold"))
     )
@@ -316,7 +316,7 @@ def build_tkinter_app(win_info):
 
     info_text = tk.Label(
         content,
-        text="Wakkii Chat Desktop\n\nAI Agent Ecosystem\nCline + Multi-Agent + MCP + Devin + Radio\n\n",
+        text="Aceline Desktop\n\nAI Agent Ecosystem\nCline + Multi-Agent + MCP + Devin + Radio\n\n",
         bg=COLORS["bg"], fg=COLORS["text"],
         font=(tkfont.Font(family="Segoe UI", size=16, weight="bold")),
         justify="center"
@@ -333,7 +333,7 @@ def build_tkinter_app(win_info):
     win_info_text.pack(pady=10)
 
     open_btn = tk.Button(
-        content, text="🚀 Open Wakkii Chat",
+        content, text="🚀 Open Aceline",
         bg=COLORS["accent"], fg="white",
         font=(tkfont.Font(family="Segoe UI", size=14, weight="bold")),
         relief="flat", cursor="hand2", padx=30, pady=12,
@@ -395,7 +395,7 @@ def build_tkinter_app(win_info):
 def main():
     """Main entry point."""
     print("=" * 60)
-    print("  WAKKII CHAT DESKTOP — Windows UI Software")
+    print("  Aceline Desktop — Windows UI Software")
     print("=" * 60)
     print()
 

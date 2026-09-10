@@ -1,8 +1,8 @@
-/**
- * Wakkii Chat Widget — Embeddable
+﻿/**
+ * Aceline Widget — Embeddable
  * 
  * Drop this script into any HTML page and it auto-creates a chat UI
- * at the bottom of the screen, connects to the Wakkii Chat server,
+ * at the bottom of the screen, connects to the Aceline Server,
  * and greets the user.
  * 
  * Usage:
@@ -123,7 +123,7 @@
       <div class="devin" id="wakkii-devin"> Devin</div>
     </div>
     <div class="wakkii-msgs" id="wakkii-msgs">
-      <div class="wakkii-msg system">Connecting to Wakkii Chat...</div>
+      <div class="wakkii-msg system">Connecting to Aceline...</div>
     </div>
     <div class="wakkii-typing" id="wakkii-typing">● ● ● Agent is working</div>
     <div class="wakkii-input">

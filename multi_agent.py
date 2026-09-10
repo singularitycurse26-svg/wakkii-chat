@@ -1,4 +1,4 @@
-"""
+﻿"""
 Multi-Agent Launcher — starts Cline + multiple Wakkii agents
 
 Reads config from ~/.wakkii-chat/agents.json and launches all agents.
@@ -47,7 +47,7 @@ def main():
     config = load_config()
 
     print("="*60)
-    print("  WAKKII CHAT — MULTI-AGENT LAUNCHER")
+    print("  Aceline — MULTI-AGENT LAUNCHER")
     print("="*60)
     print()
 

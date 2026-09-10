@@ -1,5 +1,5 @@
-"""
-Wakkii Chat Server — Standalone room-based chat backend
+﻿"""
+Aceline Server — Standalone room-based chat backend
 Stores messages in memory (with optional file persistence).
 Zero dependencies beyond Python stdlib + Flask.
 """
@@ -274,7 +274,7 @@ def serve_static(path):
 if __name__ == "__main__":
     port = int(os.environ.get("WAKKII_PORT", "8085"))
     host = os.environ.get("WAKKII_HOST", "0.0.0.0")
-    print(f"Wakkii Chat Server starting on {host}:{port}")
+    print(f"Aceline Server starting on {host}:{port}")
     print(f"UI: http://localhost:{port}")
     print(f"Health: http://localhost:{port}/health")
     app.run(host=host, port=port, debug=False)

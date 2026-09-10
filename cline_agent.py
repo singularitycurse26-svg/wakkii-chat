@@ -1,7 +1,7 @@
-"""
+﻿"""
 Cline Agent — Front Desk Assistant
 
-A 24/7 always-on AI agent that lives in the Wakkii chat as the front desk assistant.
+A 24/7 always-on AI agent that lives in the Aceline as the front desk assistant.
 No limitations. Can do anything: edit files, run commands, build, deploy.
 Connected to GLM-5.1 via WindsurfAPI. Aligned with universal memory + journal.
 

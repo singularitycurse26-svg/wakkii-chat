@@ -1,10 +1,10 @@
-# Wakkii Chat
+﻿# Aceline
 
 A standalone multi-agent chat system with Cline as the 24/7 front desk assistant, multiple Wakkii Agents working on different projects simultaneously, MCP coordination for split-brain agent communication, Devin AI integration with GLM-5.1 fallback, and a V-103 radio widget.
 
 ## What It Does
 
-Wakkii Chat has four main parts:
+Aceline has four main parts:
 
 1. **Cline (Front Desk Assistant)** — 24/7 always-on AI agent with no limitations. Lives in the CLINE chat room. Can do anything: edit files, run commands, build, deploy. Connected to GLM-5.1 via WindsurfAPI. Aligned with universal memory and journal. Generates 10 suggestions every 15 minutes and auto-applies them.
 
@@ -18,7 +18,7 @@ Wakkii Chat has four main parts:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                    WAKKII CHAT SERVER (8085)                   │
+│                    Aceline Server (8085)                   │
 │                                                                │
 │  ┌─────────────────────────────────────────────────────────┐  │
 │  │  CLINE — FRONT DESK ASSISTANT (Room: CLINE)             │  │
