@@ -1355,7 +1355,10 @@ function showSuspendedFine(fineStatus) {
       <div class="verify-suspended-title">Flagged for Asking Money</div>
       <div class="verify-suspended-reason">You were caught asking for money. Pay the fine to restore access.</div>
       <div class="verify-fine-amount">${fineStatus.fine_owed} INC</div>
-      <div style="font-size:11px; color:var(--muted);">Payment goes to founder account</div>
+      <div style="font-size:11px; color:var(--muted); margin-top:8px;">
+        25 INC to founder (hawpetossjustin25@gmail.com)<br>
+        25 INC to the person you asked
+      </div>
     </div>
     <button class="verify-btn" onclick="payFine(${fineStatus.fine_owed})">Pay ${fineStatus.fine_owed} INC Fine</button>
   `;

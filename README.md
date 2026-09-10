@@ -255,8 +255,9 @@ Based on the Wakkii Links walkie-talki system from Soulmate OS. Full WebRTC P2P 
 ### Money-Asking Policy (Zero Tolerance)
 - **Asking for money = account flagged + put on hold immediately**
 - Flagged accounts are suspended from all platform features
-- **Fine: 10 INC tokens** must be paid to restore access
-- Fine payment goes to the **founder account** (hawpetossjustin25@gmail.com)
+- **Fine: 50 INC tokens total** must be paid to restore access
+  - **25 INC to the founder account** (hawpetossjustin25@gmail.com)
+  - **25 INC to the person they asked** (the victim)
 - After fine payment, account is **restored to full platform access**
 - Multiple flags increase scrutiny
 

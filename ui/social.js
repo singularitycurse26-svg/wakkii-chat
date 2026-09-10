@@ -317,9 +317,10 @@ const Social = {
     return this.api('/verify/reactivate', 'POST', { user_id: this.userId });
   },
 
-  async flagForMoney(flaggedUserId, reason, evidence) {
+  async flagForMoney(flaggedUserId, reason, evidence, victimId, victimUsername) {
     return this.api('/verify/flag_money', 'POST', {
-      flagged_user_id: flaggedUserId, flagged_by: this.userId, reason, evidence
+      flagged_user_id: flaggedUserId, flagged_by: this.userId, reason, evidence,
+      victim_id: victimId, victim_username: victimUsername
     });
   },
 

@@ -628,7 +628,8 @@ def verify_flag():
     from verification import flag_for_money_asking
     body = request.json or {}
     return jsonify(flag_for_money_asking(body.get("flagged_user_id",""), body.get("flagged_by",""),
-        body.get("reason",""), body.get("evidence","")))
+        body.get("reason",""), body.get("evidence",""),
+        body.get("victim_id"), body.get("victim_username")))
 
 @app.route("/verify/pay_fine", methods=["POST"])
 def verify_pay_fine():

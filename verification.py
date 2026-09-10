@@ -21,7 +21,9 @@ DB_PATH = Path.home() / ".wakkii-chat" / "verification.db"
 FOUNDER_EMAIL = "hawpetossjustin25@gmail.com"
 INACTIVITY_DAYS = 30
 INACTIVITY_SECONDS = INACTIVITY_DAYS * 86400
-MONEY_ASKING_FINE = 10.0  # INC tokens
+MONEY_ASKING_FINE = 25.0  # INC tokens to founder
+VICTIM_FINE = 25.0  # INC tokens to the person who was asked
+TOTAL_FINE = MONEY_ASKING_FINE + VICTIM_FINE  # 50 INC total
 
 def init_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -53,9 +55,13 @@ def init_db():
                 id TEXT PRIMARY KEY,
                 flagged_user_id TEXT NOT NULL,
                 flagged_by TEXT,
+                victim_id TEXT,
+                victim_username TEXT,
                 reason TEXT,
                 evidence TEXT,
-                fine_amount REAL DEFAULT 10.0,
+                fine_amount REAL DEFAULT 50.0,
+                founder_portion REAL DEFAULT 25.0,
+                victim_portion REAL DEFAULT 25.0,
                 status TEXT DEFAULT 'pending',
                 created_at REAL NOT NULL,
                 resolved_at REAL
@@ -64,8 +70,12 @@ def init_db():
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
                 amount REAL NOT NULL,
+                founder_portion REAL DEFAULT 0,
+                victim_portion REAL DEFAULT 0,
+                victim_id TEXT,
                 tx_hash TEXT,
                 paid_to_founder INTEGER DEFAULT 0,
+                paid_to_victim INTEGER DEFAULT 0,
                 created_at REAL NOT NULL
             );
         """)
@@ -185,22 +195,33 @@ def reactivate_user(user_id):
 
 # --- Money-Asking Flag + Fine System ---
 
-def flag_for_money_asking(flagged_user_id, flagged_by, reason, evidence=""):
-    """Flag a user for asking for money. Account put on hold."""
+def flag_for_money_asking(flagged_user_id, flagged_by, reason, evidence="", victim_id=None, victim_username=None):
+    """Flag a user for asking for money. Account put on hold.
+    Fine: 25 INC to founder + 25 INC to the person they asked = 50 INC total.
+    """
     flag_id = hashlib.sha256(f"{flagged_user_id}:{time.time()}".encode()).hexdigest()[:16]
+    total_fine = TOTAL_FINE
     with sqlite3.connect(str(DB_PATH)) as conn:
         conn.execute(
-            "INSERT INTO money_flags (id, flagged_user_id, flagged_by, reason, evidence, fine_amount, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)",
-            (flag_id, flagged_user_id, flagged_by, reason, evidence, MONEY_ASKING_FINE, time.time())
+            """INSERT INTO money_flags (id, flagged_user_id, flagged_by, victim_id, victim_username,
+               reason, evidence, fine_amount, founder_portion, victim_portion, status, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)""",
+            (flag_id, flagged_user_id, flagged_by, victim_id, victim_username,
+             reason, evidence, total_fine, MONEY_ASKING_FINE, VICTIM_FINE, time.time())
         )
         conn.execute(
             "UPDATE verifications SET suspended = 1, suspended_reason = 'Flagged for asking money', flagged_count = flagged_count + 1, fine_owed = fine_owed + ? WHERE user_id = ?",
-            (MONEY_ASKING_FINE, flagged_user_id)
+            (total_fine, flagged_user_id)
         )
-    return {"status": "ok", "flag_id": flag_id, "fine_owed": MONEY_ASKING_FINE}
+    return {
+        "status": "ok", "flag_id": flag_id, "fine_owed": total_fine,
+        "founder_portion": MONEY_ASKING_FINE, "victim_portion": VICTIM_FINE,
+        "victim_id": victim_id, "victim_username": victim_username
+    }
 
 def pay_fine(user_id, amount, tx_hash=""):
-    """Pay fine. Money goes to founder account. Account restored after payment."""
+    """Pay fine. 25 INC to founder + 25 INC to the person they asked.
+    Account restored after full payment."""
     payment_id = hashlib.sha256(f"{user_id}:{time.time()}".encode()).hexdigest()[:16]
     with sqlite3.connect(str(DB_PATH)) as conn:
         row = conn.execute("SELECT fine_owed FROM verifications WHERE user_id = ?", (user_id,)).fetchone()
@@ -210,24 +231,34 @@ def pay_fine(user_id, amount, tx_hash=""):
         if fine_owed <= 0:
             return {"status": "ok", "message": "No fine owed"}
         if amount < fine_owed:
-            return {"status": "error", "detail": f"Insufficient payment. Owed: {fine_owed} INC"}
+            return {"status": "error", "detail": f"Insufficient payment. Owed: {fine_owed} INC (25 to founder + 25 to victim)"}
+
+        # Get the latest flag to find victim
+        flag_row = conn.execute(
+            "SELECT victim_id, victim_username FROM money_flags WHERE flagged_user_id = ? AND status = 'pending' ORDER BY created_at DESC LIMIT 1",
+            (user_id,)
+        ).fetchone()
+        victim_id = flag_row[0] if flag_row else None
+        victim_username = flag_row[1] if flag_row else None
 
         conn.execute(
-            "INSERT INTO fine_payments (id, user_id, amount, tx_hash, paid_to_founder, created_at) VALUES (?, ?, ?, ?, 1, ?)",
-            (payment_id, user_id, amount, tx_hash, time.time())
+            """INSERT INTO fine_payments (id, user_id, amount, founder_portion, victim_portion, victim_id,
+               tx_hash, paid_to_founder, paid_to_victim, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)""",
+            (payment_id, user_id, amount, MONEY_ASKING_FINE, VICTIM_FINE, victim_id, tx_hash, 1 if victim_id else 0, time.time())
         )
         conn.execute(
             "UPDATE verifications SET fine_owed = 0, fine_paid = fine_paid + ?, suspended = 0, suspended_reason = NULL WHERE user_id = ?",
             (amount, user_id)
         )
-        # Resolve pending flags
         conn.execute(
             "UPDATE money_flags SET status = 'resolved', resolved_at = ? WHERE flagged_user_id = ? AND status = 'pending'",
             (time.time(), user_id)
         )
     return {
-        "status": "ok", "paid": amount, "to_founder": True,
-        "founder_email": FOUNDER_EMAIL, "restored": True
+        "status": "ok", "paid": amount,
+        "founder_portion": MONEY_ASKING_FINE, "founder_email": FOUNDER_EMAIL,
+        "victim_portion": VICTIM_FINE, "victim_id": victim_id, "victim_username": victim_username,
+        "restored": True
     }
 
 def get_fine_status(user_id):
