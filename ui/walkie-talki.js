@@ -503,5 +503,279 @@ class AcelineWalkieTalki {
   }
 }
 
-// Export for use in index.html
+/**
+ * Aceline FaceTime — Video calling (1-on-1 and group)
+ *
+ * Features:
+ * - Start a video call with anyone in the room
+ * - Incoming call ringing + accept/decline
+ * - Full-screen video grid
+ * - Mute mic, turn camera off, flip camera
+ * - End call
+ * - Group video calls (up to 8)
+ */
+class AcelineFaceTime {
+  constructor(userName) {
+    this.userName = userName || 'User';
+    this.peer = null;
+    this.localStream = null;
+    this.videoCalls = new Map();   // peerId -> MediaConnection
+    this.videoElements = new Map(); // peerId -> HTMLVideoElement
+    this.participants = new Map();
+    this.callState = 'idle'; // idle | calling | ringing | in-call | ended
+    this.callType = null;    // 'video' | 'audio'
+    this.isCaller = false;
+    this.targetPeerId = null;
+    this.roomId = '';
+    this.onCallStateChange = null;
+    this.onIncomingCall = null;
+    this.onParticipantsChange = null;
+    this.onError = null;
+  }
+
+  attachToWalkie(walkie) {
+    this.peer = walkie.peer;
+    this.roomId = walkie.roomId;
+    this.participants = walkie.participants;
+    this.videoCalls = walkie.videoCalls;
+    this.videoElements = walkie.videoElements;
+
+    // Intercept incoming calls for FaceTime
+    const origCallHandler = this.peer.listeners('call');
+    this.peer.removeAllListeners('call');
+    this.peer.on('call', (call) => this.handleIncomingCall(call));
+  }
+
+  async startVideoCall(targetPeerId) {
+    if (!this.peer) { this.notifyError('Not connected to room'); return; }
+    if (!this.localStream) {
+      try {
+        this.localStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: { echoCancellation: true, noiseSuppression: true }
+        });
+      } catch (e) {
+        this.notifyError('Camera/mic access denied: ' + e.message);
+        return;
+      }
+    }
+
+    this.isCaller = true;
+    this.targetPeerId = targetPeerId;
+    this.callType = 'video';
+    this.setCallState('calling');
+
+    const call = this.peer.call(targetPeerId, this.localStream, {
+      metadata: { type: 'facetime', name: this.userName, callType: 'video' }
+    });
+    if (call) this.setupVideoCall(call, targetPeerId);
+
+    // Send call notification via data channel
+    this.sendCallSignal(targetPeerId, 'facetime-invite', { callType: 'video' });
+  }
+
+  async startAudioCall(targetPeerId) {
+    if (!this.peer) { this.notifyError('Not connected to room'); return; }
+    if (!this.localStream) {
+      try {
+        this.localStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true },
+          video: false
+        });
+      } catch (e) {
+        this.notifyError('Mic access denied: ' + e.message);
+        return;
+      }
+    }
+
+    this.isCaller = true;
+    this.targetPeerId = targetPeerId;
+    this.callType = 'audio';
+    this.setCallState('calling');
+
+    const call = this.peer.call(targetPeerId, this.localStream, {
+      metadata: { type: 'facetime', name: this.userName, callType: 'audio' }
+    });
+    if (call) this.setupVideoCall(call, targetPeerId);
+
+    this.sendCallSignal(targetPeerId, 'facetime-invite', { callType: 'audio' });
+  }
+
+  handleIncomingCall(call) {
+    const meta = call.metadata || {};
+    if (meta.type === 'facetime') {
+      this.isCaller = false;
+      this.targetPeerId = call.peer;
+      this.callType = meta.callType || 'video';
+      this.pendingCall = call;
+      this.setCallState('ringing');
+
+      if (this.onIncomingCall) {
+        this.onIncomingCall({
+          from: meta.name || 'Unknown',
+          peerId: call.peer,
+          callType: this.callType
+        });
+      }
+    }
+  }
+
+  async acceptCall() {
+    if (!this.pendingCall) return;
+
+    try {
+      this.localStream = await navigator.mediaDevices.getUserMedia({
+        video: this.callType === 'video' ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } : false,
+        audio: { echoCancellation: true, noiseSuppression: true }
+      });
+    } catch (e) {
+      this.notifyError('Camera/mic access denied: ' + e.message);
+      this.declineCall();
+      return;
+    }
+
+    this.pendingCall.answer(this.localStream);
+    this.setupVideoCall(this.pendingCall, this.pendingCall.peer);
+    this.pendingCall = null;
+    this.setCallState('in-call');
+  }
+
+  declineCall() {
+    if (this.pendingCall) {
+      this.pendingCall.close();
+      this.pendingCall = null;
+    }
+    this.setCallState('idle');
+  }
+
+  setupVideoCall(call, peerId) {
+    call.on('stream', (remoteStream) => {
+      let video = this.videoElements.get(peerId);
+      if (!video) {
+        video = document.createElement('video');
+        video.autoplay = true;
+        video.playsInline = true;
+        video.muted = false;
+        this.videoElements.set(peerId, video);
+      }
+      video.srcObject = remoteStream;
+      video.play().catch(() => {});
+      this.setCallState('in-call');
+      this.notifyParticipantsChange();
+    });
+
+    call.on('close', () => {
+      this.videoElements.delete(peerId);
+      this.videoCalls.delete(peerId);
+      if (this.videoCalls.size === 0) {
+        this.setCallState('ended');
+        setTimeout(() => this.setCallState('idle'), 2000);
+      }
+      this.notifyParticipantsChange();
+    });
+
+    call.on('error', () => {
+      this.videoCalls.delete(peerId);
+      this.notifyParticipantsChange();
+    });
+
+    this.videoCalls.set(peerId, call);
+  }
+
+  sendCallSignal(peerId, type, data = {}) {
+    // Send via walkie-talki data connection if available
+    if (this.peer && this.peer.connections) {
+      const conns = this.peer.connections[peerId] || [];
+      conns.forEach(conn => {
+        if (conn && conn.open) {
+          try { conn.send({ type, ...data, from: this.userName }); } catch {}
+        }
+      });
+    }
+  }
+
+  toggleMute() {
+    if (this.localStream) {
+      const audioTracks = this.localStream.getAudioTracks();
+      const isMuted = audioTracks[0]?.enabled === false;
+      audioTracks.forEach(t => t.enabled = isMuted);
+      return isMuted; // returns new state (true = unmuted)
+    }
+    return false;
+  }
+
+  toggleCamera() {
+    if (this.localStream) {
+      const videoTracks = this.localStream.getVideoTracks();
+      const isOff = videoTracks[0]?.enabled === false;
+      videoTracks.forEach(t => t.enabled = isOff);
+      return isOff; // returns new state (true = on)
+    }
+    return false;
+  }
+
+  flipCamera() {
+    if (!this.localStream) return;
+    const videoTrack = this.localStream.getVideoTracks()[0];
+    if (!videoTrack) return;
+    // Note: camera flip requires re-negotiation, this is a simple toggle
+    const constraints = { facingMode: videoTrack.getSettings().facingMode === 'user' ? 'environment' : 'user' };
+    navigator.mediaDevices.getUserMedia({ video: constraints, audio: false })
+      .then(newStream => {
+        const newTrack = newStream.getVideoTracks()[0];
+        const sender = this.videoCalls.values().next().value?.peerConnection?.getSenders()?.find(s => s.track?.kind === 'video');
+        if (sender) sender.replaceTrack(newTrack);
+        videoTrack.stop();
+      })
+      .catch(() => {});
+  }
+
+  endCall() {
+    this.videoCalls.forEach(c => { try { c.close(); } catch {} });
+    this.videoCalls.clear();
+    this.videoElements.forEach(v => { v.srcObject = null; });
+    this.videoElements.clear();
+
+    if (this.localStream) {
+      this.localStream.getTracks().forEach(t => t.stop());
+      this.localStream = null;
+    }
+
+    if (this.pendingCall) {
+      this.pendingCall.close();
+      this.pendingCall = null;
+    }
+
+    this.setCallState('ended');
+    setTimeout(() => this.setCallState('idle'), 2000);
+  }
+
+  getLocalVideoStream() {
+    return this.localStream;
+  }
+
+  getRemoteVideoStreams() {
+    const streams = {};
+    this.videoElements.forEach((video, peerId) => {
+      streams[peerId] = video.srcObject;
+    });
+    return streams;
+  }
+
+  setCallState(state) {
+    this.callState = state;
+    if (this.onCallStateChange) this.onCallStateChange(state);
+  }
+
+  notifyParticipantsChange() {
+    if (this.onParticipantsChange) this.onParticipantsChange();
+  }
+
+  notifyError(msg) {
+    if (this.onError) this.onError(msg);
+  }
+}
+
+// Export both classes
 window.AcelineWalkieTalki = AcelineWalkieTalki;
+window.AcelineFaceTime = AcelineFaceTime;

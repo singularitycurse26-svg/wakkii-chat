@@ -153,6 +153,14 @@ Based on the Wakkii Links walkie-talki system from Soulmate OS. Full WebRTC P2P 
 - Echo cancellation + noise suppression built in
 - Rooms identified by 6-char codes (A-Z, 2-9, no ambiguous chars)
 
+### FaceTime (Video Calling):
+- Start a video call with anyone in the room
+- Incoming call ringing with accept/decline
+- Full-screen video grid (remote + local video)
+- Call controls: mute mic, camera off, flip camera, end call
+- Works alongside walkie-talki (same PeerJS connection)
+- 1-on-1 or group video calls
+
 ## Incentives Inc. Wallet — Hardcoded in Every Download
 
 **No exceptions.** Every download of wakkii-chat comes with a dedicated Incentives Inc. wallet.
