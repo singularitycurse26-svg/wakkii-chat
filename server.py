@@ -735,6 +735,10 @@ def serve_icon():
 def serve_sw():
     return send_file(os.path.join("ui", "sw.js"))
 
+@app.route("/install")
+def serve_install():
+    return send_file(os.path.join("ui", "install.html"))
+
 @app.route("/<path:path>")
 def serve_static(path):
     return send_from_directory("ui", path)

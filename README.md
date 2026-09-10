@@ -4,6 +4,17 @@
 
 Aceline and Soulmate OS are international incorporated operating systems under Incentives Inc., an AI company corporation international entity. All products in the Incentives Inc. ecosystem are part of this incorporated OS platform.
 
+## Phone Home Screen Shortcut
+
+Add Aceline to your phone home screen with one tap:
+
+1. Open this page on your phone: `http://127.0.0.1:8085/install`
+2. Tap **Add to Home Screen**
+3. Aceline icon appears on your home screen
+4. Tap it to open like a native app (no browser chrome)
+
+The install page auto-detects Android vs iPhone and shows the right steps.
+
 ## Corporate Identity
 
 | Field | Value |
