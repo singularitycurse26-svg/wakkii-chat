@@ -121,6 +121,39 @@ MCP tools:
 - `claim_task(agent_id, task_desc)` / `get_active_tasks()` / `complete_task(task_id)`
 - `post_suggestion(suggestion)` / `get_suggestions()`
 
+## Authentication System
+
+Built exactly like Soulmate OS:
+
+### Founder Account
+- Email: `hawpetossjustin25@gmail.com`
+- All features **free forever**
+- Permanent session (never expires)
+- Works offline (local founder check)
+- Only the founder can use this account — others sign up normally
+
+### Regular Users
+- Sign up with email + password (min 8 characters)
+- 7-day session expiry
+- Cannot access founder features
+
+### Login Flow
+1. User opens the chat UI
+2. Login screen appears (email + password)
+3. If founder: all features unlocked, free forever badge shown
+4. If regular user: standard access
+5. Session token stored in localStorage
+6. On next visit: auto-login via session check
+7. If server offline: founder can still log in locally
+
+### Auth Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/auth/signup` | Create new account |
+| POST | `/auth/login` | Login (founder or user) |
+| POST | `/auth/check_session` | Verify session token |
+| POST | `/auth/user_info` | Get user info |
+
 ## Installation
 
 ### Prerequisites
@@ -282,11 +315,12 @@ wakkii-chat/
 ├── connector.py       # Universal Devin + GLM-5.1 connector
 ├── mcp_server.py      # MCP coordination server
 ├── multi_agent.py     # Multi-agent launcher
+├── auth.py            # Authentication system (founder + users)
 ├── start.ps1          # One-click start script
 ├── requirements.txt   # Python dependencies
 ├── .gitignore
 ├── ui/
-│   ├── index.html     # Full-page chat UI with room selector
+│   ├── index.html     # Full-page chat UI with auth + room selector
 │   ├── wakkii-widget.js  # Embeddable chat widget
 │   └── radio-widget.js   # V-103 radio widget
 └── data/              # Message persistence (gitignored)

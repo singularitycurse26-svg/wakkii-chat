@@ -187,11 +187,137 @@ body {
 .typing span:nth-child(2) { animation-delay: 0.2s; }
 .typing span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-4px); } }
+
+/* Auth screen — built like Soulmate OS */
+.auth-screen {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg); z-index: 100000;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Segoe UI', -apple-system, sans-serif;
+}
+.auth-screen.hidden { display: none; }
+.auth-card {
+  width: 100%; max-width: 380px; padding: 32px 28px;
+  background: var(--surface); border-radius: 20px;
+  border: 1px solid var(--accent2);
+  box-shadow: 0 8px 32px rgba(233,30,99,0.2);
+}
+.auth-logo {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; margin: 0 auto 16px;
+}
+.auth-title {
+  font-size: 24px; font-weight: 700; text-align: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 4px;
+}
+.auth-subtitle {
+  font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 24px;
+}
+.auth-label {
+  font-size: 12px; color: var(--muted); margin-bottom: 6px; display: block;
+}
+.auth-input {
+  width: 100%; background: var(--bg); border: 1px solid var(--accent2);
+  color: var(--text); padding: 12px 14px; border-radius: 12px;
+  font-size: 14px; outline: none; margin-bottom: 16px;
+}
+.auth-input:focus { border-color: var(--accent); }
+.auth-btn {
+  width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white; border: none; padding: 12px; border-radius: 12px;
+  font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 12px;
+  transition: transform 0.2s;
+}
+.auth-btn:hover { transform: scale(1.02); }
+.auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.auth-btn-secondary {
+  width: 100%; background: transparent; color: var(--muted);
+  border: 1px solid var(--accent2); padding: 12px; border-radius: 12px;
+  font-size: 14px; cursor: pointer; transition: all 0.2s;
+}
+.auth-btn-secondary:hover { background: var(--bg); color: var(--text); }
+.auth-error {
+  background: rgba(244,67,54,0.1); border: 1px solid #f44336;
+  color: #f44336; padding: 10px 14px; border-radius: 10px;
+  font-size: 13px; margin-bottom: 16px; display: none;
+}
+.auth-error.show { display: block; }
+.auth-founder-badge {
+  background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(233,30,99,0.2));
+  border: 1px solid #FFD700; color: #FFD700;
+  padding: 8px 14px; border-radius: 10px; font-size: 12px;
+  text-align: center; margin-bottom: 16px; display: none;
+}
+.auth-founder-badge.show { display: block; }
+.auth-toggle {
+  text-align: center; font-size: 13px; color: var(--muted); margin-top: 12px;
+}
+.auth-toggle a {
+  color: var(--accent); cursor: pointer; text-decoration: none;
+}
+.auth-toggle a:hover { text-decoration: underline; }
+.auth-loading {
+  text-align: center; color: var(--muted); font-size: 14px; padding: 20px;
+}
 </style>
 </head>
 <body>
 
-<div class="chat-header">
+<!-- Auth Screen (login/signup) — appears before chat UI -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo">🤖</div>
+    <div class="auth-title" id="authTitle">Wakkii Chat</div>
+    <div class="auth-subtitle" id="authSubtitle">AI Agent Ecosystem — Sign in to continue</div>
+
+    <div class="auth-founder-badge" id="authFounderBadge">
+      👑 Founder Account — All features free forever
+    </div>
+
+    <div class="auth-error" id="authError"></div>
+
+    <div id="authLoginForm">
+      <label class="auth-label">Email</label>
+      <input type="email" class="auth-input" id="authEmail" placeholder="you@example.com" autocomplete="email">
+
+      <label class="auth-label">Password</label>
+      <input type="password" class="auth-input" id="authPassword" placeholder="Your password" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')doLogin()">
+
+      <button class="auth-btn" id="authLoginBtn" onclick="doLogin()">Log In</button>
+      <button class="auth-btn-secondary" onclick="showSignup()">Create Account</button>
+      <div class="auth-toggle">
+        New here? <a onclick="showSignup()">Sign up</a>
+      </div>
+    </div>
+
+    <div id="authSignupForm" style="display:none">
+      <label class="auth-label">Email</label>
+      <input type="email" class="auth-input" id="signupEmail" placeholder="you@example.com" autocomplete="email">
+
+      <label class="auth-label">Password (min 8 characters)</label>
+      <input type="password" class="auth-input" id="signupPassword" placeholder="Create a password" autocomplete="new-password">
+
+      <label class="auth-label">Confirm Password</label>
+      <input type="password" class="auth-input" id="signupPassword2" placeholder="Repeat password" autocomplete="new-password"
+             onkeydown="if(event.key==='Enter')doSignup()">
+
+      <button class="auth-btn" id="authSignupBtn" onclick="doSignup()">Sign Up</button>
+      <button class="auth-btn-secondary" onclick="showLogin()">Back to Login</button>
+    </div>
+
+    <div id="authLoading" style="display:none">
+      <div class="auth-loading">Please wait...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Chat UI (hidden until logged in) -->
+<div id="chatApp" style="display:none; height:100vh; flex-direction:column;">
   <div class="logo">🤖</div>
   <div>
     <h1 id="roomTitle">Wakkii Chat</h1>
@@ -218,16 +344,194 @@ body {
   <button onclick="send()">Send</button>
 </div>
 
+</div><!-- /chatApp -->
+
 <script>
 // --- Configuration ---
 const API_BASE = window.WAKKII_API || '';
 let ROOM_ID = window.WAKKII_ROOM || 'CLINE';
-const USER_NAME = window.WAKKII_USER || 'User';
+let USER_NAME = window.WAKKII_USER || 'User';
 const POLL_INTERVAL = 3000;
 
 let lastCount = 0;
 let isTyping = false;
 let roomMessages = {}; // cache per room
+let sessionToken = localStorage.getItem('wakkii_session_token') || '';
+let isFounder = localStorage.getItem('wakkii_is_founder') === 'true';
+let userEmail = localStorage.getItem('wakkii_email') || '';
+
+// --- Auth ---
+const authScreen = document.getElementById('authScreen');
+const chatApp = document.getElementById('chatApp');
+const authError = document.getElementById('authError');
+const authFounderBadge = document.getElementById('authFounderBadge');
+
+function showAuthError(msg) {
+  authError.textContent = msg;
+  authError.classList.add('show');
+  setTimeout(() => authError.classList.remove('show'), 5000);
+}
+
+function showLogin() {
+  document.getElementById('authLoginForm').style.display = 'block';
+  document.getElementById('authSignupForm').style.display = 'none';
+  document.getElementById('authLoading').style.display = 'none';
+  document.getElementById('authTitle').textContent = 'Wakkii Chat';
+  document.getElementById('authSubtitle').textContent = 'AI Agent Ecosystem — Sign in to continue';
+}
+
+function showSignup() {
+  document.getElementById('authLoginForm').style.display = 'none';
+  document.getElementById('authSignupForm').style.display = 'block';
+  document.getElementById('authLoading').style.display = 'none';
+  document.getElementById('authTitle').textContent = 'Create Account';
+  document.getElementById('authSubtitle').textContent = 'Sign up with email and password';
+}
+
+async function doLogin() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  if (!email || !password) { showAuthError('Enter email and password'); return; }
+
+  document.getElementById('authLoginForm').style.display = 'none';
+  document.getElementById('authLoading').style.display = 'block';
+
+  try {
+    const resp = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await resp.json();
+
+    if (data.status === 'ok') {
+      sessionToken = data.session_token;
+      isFounder = data.is_founder;
+      userEmail = email.toLowerCase();
+      localStorage.setItem('wakkii_session_token', sessionToken);
+      localStorage.setItem('wakkii_is_founder', isFounder ? 'true' : 'false');
+      localStorage.setItem('wakkii_email', userEmail);
+      USER_NAME = userEmail.split('@')[0];
+      enterChat();
+    } else {
+      showLogin();
+      showAuthError(data.detail || 'Login failed');
+    }
+  } catch (e) {
+    const isLocalFounder = await localFounderCheck(email, password);
+    if (isLocalFounder) {
+      sessionToken = generateLocalToken();
+      isFounder = true;
+      userEmail = email.toLowerCase();
+      localStorage.setItem('wakkii_session_token', sessionToken);
+      localStorage.setItem('wakkii_is_founder', 'true');
+      localStorage.setItem('wakkii_email', userEmail);
+      USER_NAME = userEmail.split('@')[0];
+      enterChat();
+    } else {
+      showLogin();
+      showAuthError('Server offline. Founder login only.');
+    }
+  }
+}
+
+async function doSignup() {
+  const email = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPassword').value;
+  const password2 = document.getElementById('signupPassword2').value;
+
+  if (!email.includes('@')) { showAuthError('Enter a valid email'); return; }
+  if (password.length < 8) { showAuthError('Password must be 8+ characters'); return; }
+  if (password !== password2) { showAuthError('Passwords don\'t match'); return; }
+
+  document.getElementById('authSignupForm').style.display = 'none';
+  document.getElementById('authLoading').style.display = 'block';
+
+  try {
+    const resp = await fetch(`${API_BASE}/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await resp.json();
+
+    if (data.status === 'created') {
+      sessionToken = data.session_token;
+      isFounder = false;
+      userEmail = email.toLowerCase();
+      localStorage.setItem('wakkii_session_token', sessionToken);
+      localStorage.setItem('wakkii_is_founder', 'false');
+      localStorage.setItem('wakkii_email', userEmail);
+      USER_NAME = userEmail.split('@')[0];
+      enterChat();
+    } else {
+      showSignup();
+      showAuthError(data.detail || 'Signup failed');
+    }
+  } catch (e) {
+    showSignup();
+    showAuthError('Cannot connect to server');
+  }
+}
+
+async function localFounderCheck(email, password) {
+  const FOUNDER_EMAIL = 'hawpetossjustin25@gmail.com';
+  const FOUNDER_HASH = 'add3e2d64e2a04bfe4cc9606612d20a74706737fbbff433e0e262cc59735cc96';
+  if (email.toLowerCase() !== FOUNDER_EMAIL) return false;
+  const buf = new TextEncoder().encode(password);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  const hex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return hex === FOUNDER_HASH;
+}
+
+function generateLocalToken() {
+  const arr = new Uint8Array(32);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function enterChat() {
+  authScreen.classList.add('hidden');
+  chatApp.style.display = 'flex';
+  if (isFounder) {
+    authFounderBadge.classList.add('show');
+  }
+  checkConnection();
+  fetchMessages();
+  setInterval(fetchMessages, POLL_INTERVAL);
+  setInterval(checkConnection, 30000);
+  inputEl.focus();
+}
+
+async function checkExistingSession() {
+  if (!sessionToken) { return; }
+  try {
+    const resp = await fetch(`${API_BASE}/auth/check_session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_token: sessionToken })
+    });
+    const data = await resp.json();
+    if (data.status === 'valid') {
+      userEmail = data.email || userEmail;
+      isFounder = data.is_founder || isFounder;
+      USER_NAME = userEmail.split('@')[0];
+      enterChat();
+    } else {
+      localStorage.removeItem('wakkii_session_token');
+      sessionToken = '';
+    }
+  } catch (e) {
+    if (isFounder && sessionToken) {
+      enterChat();
+    }
+  }
+}
+
+// Start — check session or show login
+if (sessionToken) {
+  checkExistingSession();
+}
 
 const messagesEl = document.getElementById('messages');
 const inputEl = document.getElementById('input');
@@ -357,13 +661,7 @@ async function checkConnection() {
   }
 }
 
-// Initialize
-checkConnection();
-fetchMessages();
-setInterval(fetchMessages, POLL_INTERVAL);
-setInterval(checkConnection, 30000);
-
-inputEl.focus();
+// Initialize handled by enterChat() after auth
 </script>
 
 <!-- V-103 Radio Widget (separate floating widget, bottom-left) -->

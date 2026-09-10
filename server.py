@@ -153,6 +153,50 @@ def cline_status():
         "max_suggestions": 10
     })
 
+# --- Auth endpoints (built like Soulmate OS) ---
+
+@app.route("/auth/signup", methods=["POST"])
+def auth_signup():
+    try:
+        from auth import signup
+        body = request.json or {}
+        result = signup(body.get("email", ""), body.get("password", ""))
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"status": "error", "detail": str(e)})
+
+@app.route("/auth/login", methods=["POST"])
+def auth_login():
+    try:
+        from auth import login
+        body = request.json or {}
+        result = login(body.get("email", ""), body.get("password", ""))
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"status": "error", "detail": str(e)})
+
+@app.route("/auth/check_session", methods=["POST"])
+def auth_check_session():
+    try:
+        from auth import check_session
+        body = request.json or {}
+        token = body.get("session_token", "") or request.headers.get("Authorization", "").replace("Bearer ", "")
+        result = check_session(token)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"status": "invalid"})
+
+@app.route("/auth/user_info", methods=["POST"])
+def auth_user_info():
+    try:
+        from auth import get_user_info
+        body = request.json or {}
+        token = body.get("session_token", "") or request.headers.get("Authorization", "").replace("Bearer ", "")
+        result = get_user_info(token)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"status": "error", "detail": str(e)})
+
 @app.route("/")
 def serve_ui():
     return send_file(os.path.join("ui", "index.html"))
